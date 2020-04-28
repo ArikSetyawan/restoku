@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Products</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+		
+	<br><br>
+	<div class="container">
+		<a href="#" class="btn btn-primary" data-toggle="modal" data-target="#tambahproduk">Tambah Produk</a>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Nama Produk</th>
+					<th>Jenis Produk</th>
+					<th>Harga</th>
+					<th>Foto</th>
+					<th>Option</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for i in data_produk %}
+				<tr>
+					<td>{{i.nama_produk}}</td>
+					<td>{{i.jenis_product}}</td>
+					<td>{{i.harga_produk}}</td>
+					<td><img style="width: 100px;height: 100px" src="{{i.foto_produk}}" alt=""></td>
+					<td><a class="btn btn-warning" href="/editproduct/{{i.id}}/{{i.foto_produk_enc}}" data-toggle="modal" data-target="#editproduct{{loop.index}}">edit</a></td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+
+
+	<!-- Modal -->
+	<div class="modal fade" id="tambahproduk" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	    	<form action="/product" method="POST" enctype="multipart/form-data">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="exampleModalLabel">Tambah Produk</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <div class="modal-body">
+		        <div class="form-group">
+		        	<label for="">Nama Produk</label>
+		        	<input type="text" class="form-control" name="nama_produk" placeholder="nama_produk" required>
+		        	<label for="">Jenis Produk</label>
+		        	<select name="jenis_product" class="form-control">
+		        		{%for i in data_jenis_produk%}
+		        		<option value="{{i.id}}">{{i.nama_jenis_product}}</option>
+		        		{%endfor%}
+		        	</select>
+		        	<label for="">Harga Produk</label>
+		        	<input type="number" class="form-control" name="harga_produk" placeholder="harga_produk" required>
+		        	<label for="">Foto</label>
+		        	<input type="file" class="form-control" name="file" required>
+		        </div>
+		      </div>
+		      <div class="modal-footer">
+		        <button class="btn btn-primary">Submit</button>
+		      </div>
+	      </form>
+	    </div>
+	  </div>
+	</div>
+
+	<!-- Modal Edit -->
+	{% for i in data_produk %}
+	<div class="modal fade" id="editproduct{{loop.index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-lg" role="document">
+	    <div class="modal-content">
+	    	<form action="/editproduct/{{i.id}}/{{i.foto_produk_enc}}" method="POST" enctype="multipart/form-data">
+		      <div class="modal-header">
+		        <h5 class="modal-title" id="exampleModalLabel">Edit Produk</h5>
+		        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+		          <span aria-hidden="true">&times;</span>
+		        </button>
+		      </div>
+		      <div class="modal-body">
+		        <div class="form-group">
+		        	<label for="">Nama Produk</label>
+		        	<input type="text" value="{{i.nama_produk}}" class="form-control" name="nama_produk" placeholder="nama_produk" required>
+		        	<label for="">Jenis Produk</label>
+		        	<select name="jenis_product" class="form-control">
+		        		{%for j in data_jenis_produk%}
+		        		<option value="{{j.id}}">{{j.nama_jenis_product}}</option>
+		        		{%endfor%}
+		        	</select>
+		        	<label for="">Harga Produk</label>
+		        	<input type="number" value="{{i.harga_produk}}" class="form-control" name="harga_produk" placeholder="harga_produk" required>
+		        	<label for="">Foto</label>
+							<div class="form-group">
+								<div class="container">
+									<div class="row">
+										<div class="col-sm-3 mt-2 ">
+											<div class="w3-dropdown-hover">
+												<img src="{{i.foto_produk}}" width="200" height="200" alt="">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+		        	<input type="file" class="form-control" name="file">
+		        </div>
+		      </div>
+		      <div class="modal-footer">
+		        <button class="btn btn-primary">Submit</button>
+		      </div>
+	      </form>
+	    </div>
+	  </div>
+	</div>
+	{% endfor %}
+
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+</html>
