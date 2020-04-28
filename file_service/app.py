@@ -74,9 +74,7 @@ class resource_image_upload(Resource):
 					nama_file=filename,
 					link=link
 				)
-			respon = jsonify({"hasil":"created","link":link,"filename":filename,'status':"success"})
-			respon.status_code = 200
-			return respon
+			return jsonify({"hasil":"created","link":link,"filename":filename,'status':"success"})
 		except KeyError:
 			respon = jsonify({"hasil":"Gagal","status":"gagal"})
 			respon.status_code = 300
@@ -114,16 +112,42 @@ class resource_image_upload(Resource):
 						link=link
 						).where(image_file.id == old_filename.id)
 			d_image.execute()
-			respon = jsonify({"hasil":"created","link":link,"filename":filename,'status':"success"})
-			respon.status_code = 200
-			return respon
-		except KeyError:
+			return jsonify({"hasil":"created","link":link,"filename":filename,'status':"success"})
+		except DoesNotExists:
 			respon = jsonify({"hasil":"Gagal","status":"gagal"})
 			respon.status_code = 300
 			return respon
-		except ValueError:
+		except KeyError:
 			respon = jsonify({"hasil":"Gagal","status":"gagal"})
 			respon.status_code = 400
+			return respon
+		except ValueError:
+			respon = jsonify({"hasil":"Gagal","status":"gagal"})
+			respon.status_code = 500
+			return respon
+
+	def delete(self):
+		try:
+			datas = request.json
+			old_filename = str(datas['old_filename'])
+
+			old_filename = image_file.get(image_file.link == old_filename)
+			os.remove(os.path.join(app.config['imgdir'],old_filename.nama_file))
+
+			d_image = image_file.delete().where(image_file.id == old_filename.id)
+			d_image.execute()
+			return jsonify({"hasil":"success","status":"success"})
+		except DoesNotExists:
+			respon = jsonify({"hasil":"Gagal","status":"gagal"})
+			respon.status_code = 300
+			return respon
+		except KeyError:
+			respon = jsonify({"hasil":"Gagal","status":"gagal"})
+			respon.status_code = 400
+			return respon
+		except ValueError:
+			respon = jsonify({"hasil":"Gagal","status":"gagal"})
+			respon.status_code = 500
 			return respon
 
 api.add_resource(resource_image_upload, '/api/restokuimage/')

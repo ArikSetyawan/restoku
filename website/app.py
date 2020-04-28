@@ -179,6 +179,30 @@ def editproduct(idproduct,filenamephoto):
 		else:
 			return redirect(url_for('product'))
 
+@app.route("/deleteproduct/<idproduct>/<filenamephoto>")
+def deleteproduct(idproduct,filenamephoto):
+	id_produk = sToken.loads(idproduct,salt='id_produk')
+	old_filename = sToken.loads(filenamephoto,salt='foto_produk')
+
+
+	url_api = 'http://127.0.0.1:5000/api/product/'
+	url_file = 'http://127.0.0.1:5001/api/restokuimage/'
+	json_file = {"old_filename":old_filename}
+	req_file = requests.delete(url_file,json=json_file)
+	if req_file.status_code == 200:
+		if req_file.json()['status'] == 'success':
+			params = {"id_product":id_produk}
+			req_api = requests.delete(url_api,params=params)
+			print('oke')
+			return redirect(url_for('product'))
+		else:
+			print('gagal')
+			return redirect(url_for('product'))
+	else:
+		print("gagal")
+		return redirect(url_for('product'))
+
+
 
 if __name__ == '__main__':
 	app.run(debug=True,port=5002)
