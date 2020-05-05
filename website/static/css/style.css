@@ -8212,6 +8212,7 @@ h1, h2, h3, h4, h5,
       height: 300px; } }
 
 .menu-wrap {
+  min-width: 327px; 
   margin-bottom: 60px; }
   .menu-wrap .menu-img {
     display: block;

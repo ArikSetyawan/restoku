@@ -35,7 +35,7 @@ class product(BaseModel):
 	nama_produk = CharField(unique=True)
 	harga_produk = IntegerField()
 	foto_produk = CharField(unique=True)
-
+	description = TextField()
 
 def create_tables():
 	with database:
@@ -59,9 +59,9 @@ class resource_level_user(Resource):
 					data['id_level'] = i.id
 					data['nama_level'] = i.nama_level
 					data_level_user.append(data)
-				return jsonify({"result":data_level_user,"status":'000'})
+				return jsonify({"hasil":data_level_user,"status":'000'})
 			else:
-				return jsonify({"result":data_level_user,"status":'001'})
+				return jsonify({"hasil":data_level_user,"status":'001'})
 		else:
 			# kueri level_user
 			try:
@@ -133,9 +133,9 @@ class resource_user(Resource):
 					data['nama_user'] = i.nama_user
 					data['point'] = i.point
 					data_user.append(data)
-				return jsonify({"result":data_user,"status":'000'})
+				return jsonify({"hasil":data_user,"status":'000'})
 			else:
-				return jsonify({"result":data_user,"status":'001'})
+				return jsonify({"hasil":data_user,"status":'001'})
 		else:
 			try:
 				# Query User
@@ -307,6 +307,7 @@ class resource_product(Resource):
 					data['nama_produk'] = i.nama_produk
 					data['harga_produk'] = i.harga_produk
 					data['foto_produk'] = i.foto_produk
+					data['description'] = i.description
 					data_product.append(data)
 				return jsonify({"hasil":data_product,'status':'000'})
 			else:
@@ -317,9 +318,12 @@ class resource_product(Resource):
 				q_product = product.get(product.id == args['id_product'])
 				data_product = {
 					'id': q_product.id,
+					'id_jenis_product' : int(str(q_product.id_jenis_product)),
+					'jenis_product' : q_product.id_jenis_product.nama_jenis_product,
 					'nama_produk' : q_product.nama_produk,
 					'harga_produk' : q_product.harga_produk,
-					'foto_produk' : q_product.foto_produk
+					'foto_produk' : q_product.foto_produk,
+					'description' : q_product.description
 				}
 				return jsonify({"hasil":data_product,'status':'000'})
 			except DoesNotExist:
@@ -332,16 +336,18 @@ class resource_product(Resource):
 			id_jenis_product = int(datas['id_jenis_product'])
 			harga_produk = int(datas['harga_produk'])
 			foto_produk = str(datas['foto_produk'])
+			description = str(datas['description'])
 
 			product.create(
 					nama_produk=nama_produk,
 					id_jenis_product=id_jenis_product,
 					harga_produk=harga_produk,
-					foto_produk=foto_produk
+					foto_produk=foto_produk,
+					description=description
 				)
 			return jsonify({"hasil":"Product Added Successful",'status':"000"})
 		except IntegrityError:
-			return jsonify({"hasil":"level already created","status":"002"})
+			return jsonify({"hasil":"Product already created","status":"002","foto_produk":foto_produk})
 		except KeyError:
 			return jsonify({"hasil":"json data key invalid","status":"003"})
 		except TypeError:
@@ -357,12 +363,14 @@ class resource_product(Resource):
 			id_jenis_product = int(datas['id_jenis_product'])
 			harga_produk = int(datas['harga_produk'])
 			foto_produk = str(datas['foto_produk'])
+			description = str(datas['description'])
 
 			d_produk = product.update(
 					nama_produk = nama_produk,
 					id_jenis_product=id_jenis_product,
 					harga_produk = harga_produk,
-					foto_produk=foto_produk).where(product.id == id_product)
+					foto_produk=foto_produk,
+					description=description).where(product.id == id_product)
 			d_produk.execute()
 			return jsonify({"hasil":"Product Edited Successful",'status':"000"})
 		except IntegrityError:
