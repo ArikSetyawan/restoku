@@ -83,6 +83,12 @@
               <p>Product</p>
             </a>
           </li>
+          <li>
+            <a href="/table">
+              <i class="tim-icons icon-notes"></i>
+              <p>Table</p>
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -172,7 +178,7 @@
               <img class="card-img-top" src="{{i.foto_produk}}" height="180" width="320" alt="Card image cap">
               <div class="card-body">
                 <h4 class="card-title">{{i.nama_produk}} <a href="#" data-toggle="modal" data-target="#edit_produk{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/deleteproduct/{{i.id}}/{{i.foto_produk_enc}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a></h4>
-                <p class="card-text">Category : {{i.jenis_product}} <br> Price : {{i.harga_produk}} <br> Description : {{i.description}} </p>
+                <p class="card-text">Category : {{i.jenis_product}} <br> Price : <span class="price">{{i.harga_produk}}</span> <br> Description : {{i.description}} </p>
                 
               </div>
             </div>
@@ -503,6 +509,31 @@
       var fileName = $(this).val().split("\\").pop();
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
     });
+  </script>
+  <script>
+    $(document).ready(function () {
+      function formatRupiah(angka, prefix){
+        var number_string = angka.replace(/[^,\d]/g, '').toString(),
+        split       = number_string.split(','),
+        sisa        = split[0].length % 3,
+        rupiah        = split[0].substr(0, sisa),
+        ribuan        = split[0].substr(sisa).match(/\d{3}/gi);
+       
+        // tambahkan titik jika yang di input sudah menjadi angka ribuan
+        if(ribuan){
+          separator = sisa ? '.' : '';
+          rupiah += separator + ribuan.join('.');
+        }
+       
+        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        return prefix == undefined ? rupiah : (rupiah ? 'Rp.' + rupiah : '');
+      }
+      let harga = $('.price')
+      console.log(harga)
+      for (var i = harga.length - 1; i >= 0; i--) {
+        $(harga[i]).text(formatRupiah($(harga[i]).text(),''))
+      }
+    })
   </script>
 </body>
 

@@ -37,9 +37,22 @@ class product(BaseModel):
 	foto_produk = CharField(unique=True)
 	description = TextField()
 
+class table(BaseModel):
+	id = AutoField(primary_key=True)
+	nama_table = CharField(unique=True)
+	available = BooleanField(default=True)
+
+class cart(BaseModel):
+	id = AutoField(primary_key=True)
+	id_table = ForeignKeyField(table)
+	id_user = ForeignKeyField(user,null=True)
+	id_product = ForeignKeyField(product)
+	quantity = IntegerField()
+	sub_price = IntegerField()
+
 def create_tables():
 	with database:
-		database.create_tables([level_user,user, jenis_product,product])
+		database.create_tables([level_user,user, jenis_product,product,table,cart])
 
 app = Flask(__name__)
 api = Api(app)
@@ -394,10 +407,80 @@ class resource_product(Resource):
 		except KeyError:
 			return jsonify({"hasil":"json data key invalid","status":"003"})
 
+class resource_table(Resource):
+	def get(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('id_table',type=int,help='id_table.Must int')
+		args = parser.parse_args()
+		if args['id_table'] is None:
+			q_table = table.select()
+			data_table = []
+			if q_table.exists():
+				for i in q_table:
+					data = {}
+					data['id'] = i.id
+					data['nama_table'] = i.nama_table
+					data['available'] = i.available
+					data_table.append(data)
+				return jsonify({"hasil":data_table,'status':"000"})
+			else:
+				return jsonify({"hasil":data_table,'status':"000"})
+		else:
+			try:
+				q_table = table.get(table.id == args['id_table'])
+				data_table = {}
+				data_table['id'] = q_table.id
+				data_table['nama_table'] = q_table.nama_table
+				data_table['available'] = q_table.available
+				return jsonify({"hasil":data_table,'status':'000'})
+			except DoesNotExist:
+				return jsonify({'hasil':"table not found",'status':"001"})
+
+	def post(self):
+		try:
+			datas = request.json
+			nama_table = str(datas['nama_table'])
+			table.create(nama_table=nama_table)
+			return jsonify({"hasil":"table created Successful",'status':"000"})
+		except IntegrityError:
+			return jsonify({"hasil":"table already created","status":"002"})
+		except KeyError:
+			return jsonify({"hasil":"json data key invalid","status":"003"})
+		except TypeError:
+			return jsonify({"hasil":"json data required","status":"004"})
+		except ValueError:
+			return jsonify({"hasil":"json data type invalid",'status':'005'})
+
+	def put(self):
+		try:
+			datas = request.json
+			id_table = int(datas['id_table'])
+			nama_table = str(datas['nama_table'])
+			d_table = table.update(nama_table=nama_table).where(table.id == id_table)
+			d_table.execute()
+			return jsonify({"hasil":"table created Successful",'status':"000"})
+		except IntegrityError:
+			return jsonify({"hasil":"table already created","status":"002"})
+		except KeyError:
+			return jsonify({"hasil":"json data key invalid","status":"003"})
+		except TypeError:
+			return jsonify({"hasil":"json data required","status":"004"})
+		except ValueError:
+			return jsonify({"hasil":"json data type invalid",'status':'005'})
+
+	def delete(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('id_table',type=int,required=True,help='id_table.Must int')
+		args = parser.parse_args()
+		d_table = table.delete().where(table.id == id_table)
+		d_table.execute()
+		return jsonify({"hasil":"table deleted Successful",'status':"000"})
+
 api.add_resource(resource_level_user, '/api/level_user/')
 api.add_resource(resource_user, '/api/user/')
 api.add_resource(resource_jenis_product,'/api/jenis_product/')
 api.add_resource(resource_product, '/api/product/')
+api.add_resource(resource_table, '/api/table/')
 
 if __name__ == '__main__':
 	create_tables()

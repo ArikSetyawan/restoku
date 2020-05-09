@@ -1,0 +1,33 @@
+#qr {
+	width: 640px;
+	border: 1px solid silver
+}
+
+@media(max-width: 600px) {
+	#qr {
+		width: 300px;
+		border: 1px solid silver
+	}
+}
+
+.scan-type-region {
+	display: block;
+	border: 1px solid silver;
+	padding: 10px;
+	margin: 5px;
+	border-radius: 5px;
+}
+
+.scan-type-region.disabled {
+	opacity: 0.5;
+}
+
+.empty {
+	display: block;
+	width: 100%;
+	height: 20px;
+}
+
+#qr .placeholder {
+	padding: 50px;
+}

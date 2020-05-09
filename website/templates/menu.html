@@ -231,7 +231,7 @@
 														<h3><a href="#">{{i.nama_produk}}</a></h3>
 														<p>{{i.description}}</p>
 														<p class="price"><span>{{i.harga_produk}}</span></p>
-														<p><a href="#" class="btn btn-primary btn-outline-primary">Add to cart</a></p>
+														<p><a {% if session['table'] %} href="#" {% else %} href="/scan-table" target="_blank" {% endif %} class="btn btn-primary btn-outline-primary" >Add to cart</a></p>
 													</div>
 												</div>
 											</div>
@@ -251,7 +251,7 @@
 														<h3><a href="#">{{i.nama_produk}}</a></h3>
 														<p>{{i.description}}</p>
 														<p class="price"><span>{{i.harga_produk}}</span></p>
-														<p><a href="#" class="btn btn-primary btn-outline-primary">Add to cart</a></p>
+														<p><a {% if session['table'] %} href="#" {% else %} href="/scan-table" target="_blank" {% endif %} class="btn btn-primary btn-outline-primary">Add to cart</a></p>
 													</div>
 												</div>
 											</div>
@@ -271,7 +271,7 @@
 														<h3><a href="#">{{i.nama_produk}}</a></h3>
 														<p>{{i.description}}</p>
 														<p class="price"><span>{{i.harga_produk}}</span></p>
-														<p><a href="#" class="btn btn-primary btn-outline-primary">Add to cart</a></p>
+														<p><a {% if session['table'] %} href="#" {% else %} href="/scan-table" target="_blank" {% endif %} class="btn btn-primary btn-outline-primary">Add to cart</a></p>
 													</div>
 												</div>
 											</div>
@@ -353,9 +353,32 @@
 		<script src="{{url_for('static',filename='js/bootstrap-datepicker.js')}}"></script>
 		<script src="{{url_for('static',filename='js/jquery.timepicker.min.js')}}"></script>
 		<script src="{{url_for('static',filename='js/scrollax.min.js')}}"></script>
-		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiULgl1JY0H2s&sensor=false"></script>
-		<script src="{{url_for('static',filename='js/google-map.js')}}"></script>
 		<script src="{{url_for('static',filename='js/main.js')}}"></script>
-		
+    <!-- Currency -->
+		<script>
+      $(document).ready(function () {
+				function formatRupiah(angka, prefix){
+					var number_string = angka.replace(/[^,\d]/g, '').toString(),
+					split   		= number_string.split(','),
+					sisa     		= split[0].length % 3,
+					rupiah     		= split[0].substr(0, sisa),
+					ribuan     		= split[0].substr(sisa).match(/\d{3}/gi);
+				 
+					// tambahkan titik jika yang di input sudah menjadi angka ribuan
+					if(ribuan){
+						separator = sisa ? '.' : '';
+						rupiah += separator + ribuan.join('.');
+					}
+				 
+					rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+					return prefix == undefined ? rupiah : (rupiah ? 'Rp.' + rupiah : '');
+				}
+				let harga = $('.price')
+				console.log(harga)
+				for (var i = harga.length - 1; i >= 0; i--) {
+					$(harga[i]).text(formatRupiah($(harga[i]).text(),''))
+				}
+			})
+    </script>
 	</body>
 </html>

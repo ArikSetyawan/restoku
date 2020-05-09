@@ -402,6 +402,35 @@ def deleteproduct(idproduct,filenamephoto):
 		print("gagal")
 		return redirect(url_for('product'))
 
+@app.route('/scan-table')
+def scan_table():
+	return render_template('scan_table.html')
+
+@app.route('/table',methods=['GET','POST'])
+def table():
+	if request.method == 'GET':
+		url_api = 'http://127.0.0.1:5000/api/table/'
+		req_table = requests.get(url_api)
+		
+		data_table = []
+
+		if req_table.status_code == 200:
+			if req_table.json()['status'] == '000':
+				for i in req_table.json()['hasil']:
+					data = {}
+					data['id'] = sToken.dumps(i['id'],salt='id_table')
+					data['nama_table'] = i['nama_table']
+					data['available'] = i['available']
+					data_table.append(data)
+			return render_template('blackdashboard/table.html',data_table=data_table)
+		return render_template('blackdashboard/table.html',data_table=data_table)
+	else:
+		nama_table = str(request.form['nama_table'])
+
+		url_api = 'http://127.0.0.1:5000/api/table/'
+		json = {'nama_table':nama_table}
+		req_table = requests.post(url_api,json=json)
+		return redirect(url_for('table'))
 
 
 if __name__ == '__main__':
