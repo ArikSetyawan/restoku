@@ -476,11 +476,105 @@ class resource_table(Resource):
 		d_table.execute()
 		return jsonify({"hasil":"table deleted Successful",'status':"000"})
 
+class resource_cart(Resource):
+	def get(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('id_table', required=True, type=int, help='must int, id_table')
+		parser.add_argument('id_cart', type=int, help='must int, id_cart')
+		args = parser.parse_args()
+		if args['id_cart'] is None:
+			# Query Cart
+			q_cart = cart.select().where(cart.id_table == args['id_table'])
+			data_cart = []
+			if q_cart.exists():
+				for i in q_cart:
+					data = {}
+					data['id'] = i.id
+					data['id_table'] = int(str(i.id_table))
+					data['nama_table'] = i.id_table.nama_table
+					data['id_user'] = i.id_user
+					data['id_product'] = int(str(i.id_product))
+					data['nama_produk'] = i.id_product.nama_produk
+					data['foto_produk'] = i.id_product.foto_produk
+					data['description'] = i.id_product.description
+					data['harga_produk'] = i.id_product.harga_produk
+					data['quantity'] = i.quantity
+					data['sub_price'] = i.sub_price
+					data_cart.append(data)
+				datas = {}
+				datas['item'] = data_cart
+				datas['qty_all_item'] = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
+				datas['grand_price'] = cart.select(fn.SUM(cart.sub_price)).where(cart.id_table == args['id_table']).scalar()
+				return jsonify({"hasil":datas,'status':'000'})
+			else:
+				datas = {}
+				datas['item'] = data_cart
+				datas['qty_all_item'] = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
+				datas['grand_price'] = cart.select(fn.SUM(cart.sub_price)).where(cart.id_table == args['id_table']).scalar()
+				return jsonify({"hasil":datas,'status':'001'})
+		else:
+			try:
+				# Query Cart
+				q_cart = cart.get((cart.id_table == args['id_table'])&(cart.id == args['id_cart']))
+				data_cart = {}
+				data_cart['id'] = q_cart.id
+				data_cart['id_table'] = int(str(q_cart.id_table))
+				data_cart['nama_table'] = q_cart.id_table.nama_table
+				data_cart['id_user'] = q_cart.id_user
+				data_cart['id_product'] = int(str(q_cart.id_product))
+				data_cart['nama_produk'] = q_cart.id_product.nama_produk
+				data_cart['foto_produk'] = q_cart.id_product.foto_produk
+				data_cart['description'] = q_cart.id_product.description
+				data_cart['harga_produk'] = q_cart.id_product.harga_produk
+				data_cart['quantity'] = q_cart.quantity
+				data_cart['sub_price'] = q_cart.sub_price
+
+				return jsonify({"hasil":data_cart,'status':'000'})
+			except DoesNotExist:
+				return jsonify({"hasil":'Product tidak tersedia','status':'001'})
+
+	def post(self):
+		try:
+			datas = request.json
+			id_product = str(datas['id_product'])
+			id_table = int(datas['id_table'])
+			quantity = int(datas['quantity'])
+			sub_price = str(datas['sub_price'])
+			
+			cart.create(
+					id_product=id_product,
+					id_table = id_table,
+					quantity= quantity,
+					sub_price = sub_price
+				)
+			return jsonify({"hasil":"Added To Cart Successful",'status':"000"})
+		except KeyError:
+			return jsonify({"hasil":"json data key invalid","status":"003"})
+		except TypeError:
+			return jsonify({"hasil":"json data required","status":"004"})
+		except ValueError:
+			return jsonify({"hasil":"json data type invalid",'status':'005'})
+
+	def delete(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('id_table', required=True, type=int, help='must int, id_table')
+		parser.add_argument('id_cart', type=int, help='must int, id_cart')
+		args = parser.parse_args()
+		if args['id_cart'] is None:
+			d_cart = cart.delete().where(cart.id_table == args['id_table'])
+			d_cart.execute()
+			return jsonify({"hasil":"Deleted",'status':'000'})
+		else:
+			d_cart = cart.delete().where((cart.id == args['id_cart'])&(cart.id_table == args['id_table']))
+			d_cart.execute()
+			return jsonify({"hasil":'cart {} Deleted'.format(args['id_cart']),'status':'000'})
+
 api.add_resource(resource_level_user, '/api/level_user/')
 api.add_resource(resource_user, '/api/user/')
 api.add_resource(resource_jenis_product,'/api/jenis_product/')
 api.add_resource(resource_product, '/api/product/')
 api.add_resource(resource_table, '/api/table/')
+api.add_resource(resource_cart, '/api/cart/')
 
 if __name__ == '__main__':
 	create_tables()

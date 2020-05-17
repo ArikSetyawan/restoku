@@ -33,7 +33,7 @@
 				<div class="collapse navbar-collapse" id="ftco-nav">
 					<ul class="navbar-nav ml-auto">
 						{% include 'navmenu.html' %}
-						<li class="nav-item cart"><a href="#" class="nav-link"><span class="icon icon-shopping_cart"></span><span class="bag d-flex justify-content-center align-items-center"><small>1</small></span></a></li>
+						<li class="nav-item cart"><a href="/cart" class="nav-link"><span class="icon icon-shopping_cart"></span><span class="bag d-flex justify-content-center align-items-center"><small>0</small></span></a></li>
 					</ul>
 				</div>
 			</div>
@@ -231,7 +231,7 @@
 														<h3><a href="#">{{i.nama_produk}}</a></h3>
 														<p>{{i.description}}</p>
 														<p class="price"><span>{{i.harga_produk}}</span></p>
-														<p><a {% if session['table'] %} href="#" {% else %} href="/scan-table" target="_blank" {% endif %} class="btn btn-primary btn-outline-primary" >Add to cart</a></p>
+														<p><a {% if session['table'] %} href="/add-to-cart/{{i.id}}" {% else %} href="/scan-table"  {% endif %} class="btn btn-primary btn-outline-primary" >Add to cart</a></p>
 													</div>
 												</div>
 											</div>
@@ -251,7 +251,7 @@
 														<h3><a href="#">{{i.nama_produk}}</a></h3>
 														<p>{{i.description}}</p>
 														<p class="price"><span>{{i.harga_produk}}</span></p>
-														<p><a {% if session['table'] %} href="#" {% else %} href="/scan-table" target="_blank" {% endif %} class="btn btn-primary btn-outline-primary">Add to cart</a></p>
+														<p><a {% if session['table'] %} href="/add-to-cart/{{i.id}}" {% else %} href="/scan-table"  {% endif %} class="btn btn-primary btn-outline-primary">Add to cart</a></p>
 													</div>
 												</div>
 											</div>
@@ -271,7 +271,7 @@
 														<h3><a href="#">{{i.nama_produk}}</a></h3>
 														<p>{{i.description}}</p>
 														<p class="price"><span>{{i.harga_produk}}</span></p>
-														<p><a {% if session['table'] %} href="#" {% else %} href="/scan-table" target="_blank" {% endif %} class="btn btn-primary btn-outline-primary">Add to cart</a></p>
+														<p><a {% if session['table'] %} href="/add-to-cart/{{i.id}}" {% else %} href="/scan-table"  {% endif %} class="btn btn-primary btn-outline-primary">Add to cart</a></p>
 													</div>
 												</div>
 											</div>
@@ -329,7 +329,7 @@
 				<div class="row">
 					<div class="col-md-12 text-center">
 						<p><!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-						Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="icon-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
+						Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="icon-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" >Colorlib</a>
 						<!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. --></p>
 					</div>
 				</div>
@@ -354,6 +354,8 @@
 		<script src="{{url_for('static',filename='js/jquery.timepicker.min.js')}}"></script>
 		<script src="{{url_for('static',filename='js/scrollax.min.js')}}"></script>
 		<script src="{{url_for('static',filename='js/main.js')}}"></script>
+		<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+		<script src="{{url_for('static',filename='jsku/countdown.js')}}"></script>
     <!-- Currency -->
 		<script>
       $(document).ready(function () {
@@ -374,7 +376,6 @@
 					return prefix == undefined ? rupiah : (rupiah ? 'Rp.' + rupiah : '');
 				}
 				let harga = $('.price')
-				console.log(harga)
 				for (var i = harga.length - 1; i >= 0; i--) {
 					$(harga[i]).text(formatRupiah($(harga[i]).text(),''))
 				}

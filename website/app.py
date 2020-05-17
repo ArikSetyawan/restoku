@@ -1,5 +1,5 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, session
-import requests,base64
+from flask import Flask, request, render_template, redirect, url_for, flash, session, make_response
+import requests,base64, datetime, random
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeTimedSerializer, BadData
 
@@ -8,6 +8,27 @@ app.config['SECRET_KEY'] = 'thisissecret'
 
 sToken = URLSafeTimedSerializer('thisissecret')
 ALLOWED_EXTENSIONS = set(['png','jpeg','jpg'])
+
+
+# Scheduler
+from rq import Queue
+from redis import Redis
+from rq.registry import ScheduledJobRegistry
+
+# Backgroun Function
+import jadwal_job
+
+# RedisLabs_Connection
+# url_redis = "redis-13020.c98.us-east-1-4.ec2.cloud.redislabs.com"
+# port_redis = "13020"
+# db_redis = 'restoku'
+# password_redis = '1U8h7PCGI7zLxfme55d493sdcWC0ioGo'
+# redis = Redis(host=url_redis, port=port_redis, db=0, password=password_redis)
+
+# Localhost Connection
+redis = Redis()
+
+queue = Queue(connection=redis)
 
 
 def allowed_file(filename):
@@ -33,7 +54,6 @@ def index():
 			data['foto_produk_enc'] = sToken.dumps(i['foto_produk'],salt='foto_produk')
 			data['description'] = i['description']
 			data_produk.append(data)
-
 	return render_template('menu.html',data_produk=data_produk)
 
 @app.route('/dashboard')
@@ -404,7 +424,70 @@ def deleteproduct(idproduct,filenamephoto):
 
 @app.route('/scan-table')
 def scan_table():
+	if 'table' in session:
+		return redirect(url_for('index'))
 	return render_template('scan_table.html')
+
+@app.route('/scan-table/<id_table>')
+def scan_table_id(id_table):
+	if 'table' in session:
+		return redirect(url_for('index'))
+	dec_id_table = sToken.loads(id_table,salt='id_table')
+	session['table'] = dec_id_table
+
+	job = queue.enqueue_in(datetime.timedelta(minutes=5),jadwal_job.background_task,dec_id_table)
+	registry = ScheduledJobRegistry(queue=queue)
+
+	resp = make_response(redirect(url_for('index')))
+	expire_date = datetime.datetime.now()
+	expire_date = expire_date + datetime.timedelta(minutes=5)
+	resp.set_cookie('table',id_table,expires=expire_date)
+	resp.set_cookie('exp',"{}".format(expire_date.timestamp()*1000),expires=expire_date)
+	return resp
+
+@app.route('/exp-table')
+def exp_table():
+	if 'table' in session:
+		url_cart = "http://127.0.0.1:5000/api/cart/"
+		req_cart = requests.delete(url_cart,params={'id_table':session['table']})
+		session.pop('table')
+		resp = redirect(url_for('index'))
+		return resp
+	return redirect(url_for('index'))
+
+
+@app.route('/cart')
+def cart():
+	if 'table' in session:
+		url_cart = "http://127.0.0.1:5000/api/cart/"
+		req_cart = requests.get(url_cart,params={'id_table':session['table']})
+		data_cart = req_cart.json()['hasil']['item']
+		qty_all_item = req_cart.json()['hasil']['qty_all_item']
+		grand_price = req_cart.json()['hasil']['grand_price']
+		return render_template('cart.html',data_cart=data_cart,qty_all_item=qty_all_item,grand_price=grand_price)
+	else:
+		return redirect(url_for('index'))
+
+@app.route('/add-to-cart/<id_produk>')
+def add_to_cart(id_produk):
+	if 'table' in session:
+		id_produk = sToken.loads(id_produk,salt='id_produk')
+		jumlah = 1
+		meja = session['table']
+		
+		url_produk = "http://127.0.0.1:5000/api/product/"
+		req_produk = requests.get(url_produk,params={'id_product':id_produk})
+		sub_total = int(req_produk.json()['hasil']['harga_produk']) * jumlah
+		json = {
+			'id_product':id_produk,
+			'id_table':meja,
+			'quantity':jumlah,
+			'sub_price':sub_total
+		}
+		url_cart = "http://127.0.0.1:5000/api/cart/"
+		req_cart = requests.post(url_cart,json=json)
+		return redirect(url_for('index'))
+	return redirect(url_for('index'))
 
 @app.route('/table',methods=['GET','POST'])
 def table():

@@ -51,7 +51,7 @@
                 qrCodeMessage => {
                   // do something when code is read. For example:
                   console.log(`QR Code detected: ${qrCodeMessage}`);
-                  // window.location.replace(qrCodeMessage)
+                  window.location.replace(qrCodeMessage)
                   html5QrCode.stop().then(ignore => {
                     // QR Code scanning is stopped.
                     console.log("QR Code scanning stopped.");
