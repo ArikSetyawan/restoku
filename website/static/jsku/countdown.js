@@ -12,21 +12,21 @@ function startTimer(duration, display) {
       if (--timer < 0) {
           timer = duration;
       }
-      if (parseInt(minutes) == 0 && parseInt(seconds) == 0) {
+      if (parseInt(minutes) <= 0 && parseInt(seconds) <= 0) {
+        $.removeCookie('exp')
         $.removeCookie('table')
-        window.location.replace('http://127.0.0.1:5002/exp-table')
+        window.location.replace('http://127.0.0.1:5002/')
       }
-    console.log(parseInt(minutes)+":"+parseInt(seconds))
   }, 1000);
 }
 
 window.onload = function () {
   if ($.cookie("table")) {
     exp = $.cookie("exp")
-    now = Date.now()
+    now = Date.now()/1000
     exp = parseInt(exp)-now
-    timer = exp/1000
-    
+    timer = Math.floor(exp)
+    console.log($.cookie("exp") + "-" + now + "=" + timer)
     // if(parseInt(min*60)+sec != 0){
     //   var fiveMinutes = (parseInt(min*60)+sec);
     // }else{

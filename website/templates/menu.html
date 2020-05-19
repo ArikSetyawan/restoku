@@ -33,7 +33,7 @@
 				<div class="collapse navbar-collapse" id="ftco-nav">
 					<ul class="navbar-nav ml-auto">
 						{% include 'navmenu.html' %}
-						<li class="nav-item cart"><a href="/cart" class="nav-link"><span class="icon icon-shopping_cart"></span><span class="bag d-flex justify-content-center align-items-center"><small>0</small></span></a></li>
+						<li class="nav-item cart"><a href="/cart" class="nav-link"><span class="icon icon-shopping_cart"></span><span class="bag d-flex justify-content-center align-items-center"><small>{% if session['quantity'] %}{{session['quantity']}}{% else %}0{%endif%}</small></span></a></li>
 					</ul>
 				</div>
 			</div>
@@ -60,15 +60,15 @@
 							<div class="col-md-4 d-flex ftco-animate">
 								<div class="icon"><span class="icon-phone"></span></div>
 								<div class="text">
-									<h3>000 (123) 456 7890</h3>
-									<p>A small river named Duden flows by their place and supplies.</p>
+									<h3>+62 857 4633 7777</h3>
+									<p>It's Just a Good Bussiness.</p>
 								</div>
 							</div>
 							<div class="col-md-4 d-flex ftco-animate">
 								<div class="icon"><span class="icon-my_location"></span></div>
 								<div class="text">
-									<h3>198 West 21th Street</h3>
-									<p>	203 Fake St. Mountain View, San Francisco, California, USA</p>
+									<h3>198 Semambung Street</h3>
+									<p>	198 Semambung St. Driyorejo, Gresik, Jawa Timur, ID</p>
 								</div>
 							</div>
 							<div class="col-md-4 d-flex ftco-animate">
@@ -294,7 +294,7 @@
 					<div class="col-lg-3 col-md-6 mb-5 mb-md-5">
 						<div class="ftco-footer-widget mb-4">
 							<h2 class="ftco-heading-2">About Us</h2>
-							<p>Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.</p>
+							<p>It's Just a Good Bussiness.</p>
 							<ul class="ftco-footer-social list-unstyled float-md-left float-lft mt-5">
 								<li class="ftco-animate"><a href="#"><span class="icon-twitter"></span></a></li>
 								<li class="ftco-animate"><a href="#"><span class="icon-facebook"></span></a></li>
@@ -318,9 +318,9 @@
 							<h2 class="ftco-heading-2">Have a Questions?</h2>
 							<div class="block-23 mb-3">
 								<ul>
-									<li><span class="icon icon-map-marker"></span><span class="text">203 Fake St. Mountain View, San Francisco, California, USA</span></li>
-									<li><a href="#"><span class="icon icon-phone"></span><span class="text">+2 392 3929 210</span></a></li>
-									<li><a href="#"><span class="icon icon-envelope"></span><span class="text">info@yourdomain.com</span></a></li>
+									<li><span class="icon icon-map-marker"></span><span class="text">198 Semambung St. Driyorejo, Gresik, Jawa Timur, ID</span></li>
+									<li><a href="#"><span class="icon icon-phone"></span><span class="text">+62 857 4633 7777</span></a></li>
+									<li><a href="mailto:saya.mas.tya@gmail.com" target="_blank"><span class="icon icon-envelope"></span><span class="text">saya.mas.tya@gmail.com</span></a></li>
 								</ul>
 							</div>
 						</div>

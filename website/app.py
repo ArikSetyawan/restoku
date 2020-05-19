@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, redirect, url_for, flash, session, make_response
-import requests,base64, datetime, random
+import requests,base64, datetime, random, time
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeTimedSerializer, BadData
 
@@ -34,6 +34,27 @@ queue = Queue(connection=redis)
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.before_request
+def before_request():
+	now = time.time()
+	# print(type(now))
+	# print(now)
+	if 'exp' in session:
+		print("session = {}".format(session['exp']))
+		print("now = {}".format(now))
+		print("{} - {} = {}".format(session['exp'],now,int(session['exp'] - now)))
+		print(int(session['exp'] - now))
+		if int(session['exp'] - now) <= 0:
+			session.pop('exp')
+			session.pop('table')
+			session.pop('quantity')
+			print('expired')
+		else:
+			print('running')
+			pass
+	else:
+		pass
 
 @app.route('/')
 def index():
@@ -434,6 +455,7 @@ def scan_table_id(id_table):
 		return redirect(url_for('index'))
 	dec_id_table = sToken.loads(id_table,salt='id_table')
 	session['table'] = dec_id_table
+	session['quantity'] = 0
 
 	job = queue.enqueue_in(datetime.timedelta(minutes=5),jadwal_job.background_task,dec_id_table)
 	registry = ScheduledJobRegistry(queue=queue)
@@ -442,27 +464,35 @@ def scan_table_id(id_table):
 	expire_date = datetime.datetime.now()
 	expire_date = expire_date + datetime.timedelta(minutes=5)
 	resp.set_cookie('table',id_table,expires=expire_date)
-	resp.set_cookie('exp',"{}".format(expire_date.timestamp()*1000),expires=expire_date)
+	resp.set_cookie('exp',"{}".format(expire_date.timestamp()),expires=expire_date)
+	session['exp'] = expire_date.timestamp()
 	return resp
-
-@app.route('/exp-table')
-def exp_table():
-	if 'table' in session:
-		url_cart = "http://127.0.0.1:5000/api/cart/"
-		req_cart = requests.delete(url_cart,params={'id_table':session['table']})
-		session.pop('table')
-		resp = redirect(url_for('index'))
-		return resp
-	return redirect(url_for('index'))
-
 
 @app.route('/cart')
 def cart():
 	if 'table' in session:
 		url_cart = "http://127.0.0.1:5000/api/cart/"
 		req_cart = requests.get(url_cart,params={'id_table':session['table']})
-		data_cart = req_cart.json()['hasil']['item']
-		qty_all_item = req_cart.json()['hasil']['qty_all_item']
+		d_cart = req_cart.json()['hasil']['item']
+		data_cart = []
+		for i in d_cart :
+			data = {}
+			data['id'] = sToken.dumps(i['id'],salt='id_cart')
+			data['id_table'] =  sToken.dumps(i['id_table'],salt='id_table')
+			data['nama_table'] = i['nama_table']
+			data['id_user'] = sToken.dumps(i['id_user'],salt='id_user')
+			data['id_product'] = sToken.dumps(i['id_product'],salt='id_produk')
+			data['nama_produk'] = i['nama_produk']
+			data['foto_produk'] = i['foto_produk']
+			data['description'] = i['description']
+			data['harga_produk'] = i['harga_produk']
+			data['quantity'] = i['quantity']
+			data['sub_price'] = i['sub_price']
+			data_cart.append(data)
+		if req_cart.json()['hasil']['qty_all_item'] == None:
+			qty_all_item = 0
+		else:
+			qty_all_item = req_cart.json()['hasil']['qty_all_item']
 		grand_price = req_cart.json()['hasil']['grand_price']
 		return render_template('cart.html',data_cart=data_cart,qty_all_item=qty_all_item,grand_price=grand_price)
 	else:
@@ -475,19 +505,49 @@ def add_to_cart(id_produk):
 		jumlah = 1
 		meja = session['table']
 		
-		url_produk = "http://127.0.0.1:5000/api/product/"
-		req_produk = requests.get(url_produk,params={'id_product':id_produk})
-		sub_total = int(req_produk.json()['hasil']['harga_produk']) * jumlah
 		json = {
 			'id_product':id_produk,
 			'id_table':meja,
 			'quantity':jumlah,
-			'sub_price':sub_total
 		}
 		url_cart = "http://127.0.0.1:5000/api/cart/"
 		req_cart = requests.post(url_cart,json=json)
+		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
 		return redirect(url_for('index'))
 	return redirect(url_for('index'))
+
+@app.route('/update-cart-item',methods=['POST'])
+def update_cart_item():
+	id_cart = request.form['id_cart']
+	id_cart = sToken.loads(id_cart,salt='id_cart')
+	qty = request.form['quantity']
+
+	# Get Cart Item Data
+	url_cart = "http://127.0.0.1:5000/api/cart/"
+	req_cart = requests.get(url=url_cart,params={'id_table':session['table'],'id_cart':id_cart})
+	
+	if req_cart.status_code == 200 and req_cart.json()['status'] == "000":
+		# Updating Cart
+		json = {
+			'id_cart':id_cart,
+			'id_product':req_cart.json()['hasil']['id_product'],
+			'id_table':session['table'],
+			'quantity':qty
+		}
+		url_cart = "http://127.0.0.1:5000/api/cart/"
+		req_cart = requests.put(url_cart,json=json)
+		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
+		return 'Berhasil Di Ubah'
+	else:
+		return 'gagal'
+
+@app.route('/delete-cart-item/<id_cart>')
+def delete_cart_item(id_cart):
+	id_cart = sToken.loads(id_cart,salt='id_cart',max_age=300)
+	url_cart = "http://127.0.0.1:5000/api/cart/"
+	req_cart = requests.delete(url_cart,params={'id_table':session['table'],'id_cart':id_cart})
+	session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
+	return redirect(url_for('cart'))
 
 @app.route('/table',methods=['GET','POST'])
 def table():

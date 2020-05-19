@@ -531,7 +531,7 @@ class resource_cart(Resource):
 
 				return jsonify({"hasil":data_cart,'status':'000'})
 			except DoesNotExist:
-				return jsonify({"hasil":'Product tidak tersedia','status':'001'})
+				return jsonify({"hasil":'Cart Tidak Tersedia tidak tersedia','status':'001'})
 
 	def post(self):
 		try:
@@ -539,15 +539,28 @@ class resource_cart(Resource):
 			id_product = str(datas['id_product'])
 			id_table = int(datas['id_table'])
 			quantity = int(datas['quantity'])
-			sub_price = str(datas['sub_price'])
 			
-			cart.create(
+			cek_cart = cart.select().where((cart.id_table == id_table)&(cart.id_product == id_product))
+			sub_price = int(product.get(product.id == id_product).harga_produk) * quantity
+			if cek_cart.exists():
+				cek_cart = cek_cart.get()
+				quantity = int(cek_cart.quantity) + int(quantity)
+				sub_price = int(cek_cart.sub_price) + int(sub_price)
+				d_cart = cart.update(quantity=quantity,sub_price=sub_price).where(cart.id_table == id_table)
+				d_cart.execute()
+
+				qty_all = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == id_table).scalar()
+				return jsonify({"hasil":"Added To Cart Successful",'status':"000","quantity":qty_all})
+			else:
+				sub_price = int(product.get(product.id == id_product).harga_produk) * quantity
+				cart.create(
 					id_product=id_product,
 					id_table = id_table,
 					quantity= quantity,
-					sub_price = sub_price
+					sub_price= sub_price
 				)
-			return jsonify({"hasil":"Added To Cart Successful",'status':"000"})
+				qty_all = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == id_table).scalar()
+				return jsonify({"hasil":"Added To Cart Successful",'status':"000","quantity":qty_all})
 		except KeyError:
 			return jsonify({"hasil":"json data key invalid","status":"003"})
 		except TypeError:
@@ -555,6 +568,32 @@ class resource_cart(Resource):
 		except ValueError:
 			return jsonify({"hasil":"json data type invalid",'status':'005'})
 
+	def put(self):
+		try:
+			datas = request.json
+			id_cart = int(datas['id_cart'])
+			id_product = int(datas['id_product'])
+			id_table = int(datas['id_table'])
+			quantity = int(datas['quantity'])
+
+			harga_produk = product.get(product.id == id_product).harga_produk
+			sub_price = quantity * harga_produk
+
+			d_cart = cart.update(
+				quantity=quantity,
+				sub_price=sub_price).where((cart.id_table == id_table)&(cart.id == id_cart)&(cart.id_product == id_product))
+			d_cart.execute()
+			qty_all = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == id_table).scalar()
+			return jsonify({"hasil":"Cart Edited Successful","status":"000","quantity":qty_all})
+		except DoesNotExist:
+			return jsonify({"hasil":"Some Error~","status":"009"})
+		except KeyError:
+			return jsonify({"hasil":"json data key invalid","status":"003"})
+		except TypeError:
+			return jsonify({"hasil":"json data required","status":"004"})
+		except ValueError:
+			return jsonify({"hasil":"json data type invalid",'status':'005'})
+	
 	def delete(self):
 		parser = reqparse.RequestParser()
 		parser.add_argument('id_table', required=True, type=int, help='must int, id_table')
@@ -567,7 +606,8 @@ class resource_cart(Resource):
 		else:
 			d_cart = cart.delete().where((cart.id == args['id_cart'])&(cart.id_table == args['id_table']))
 			d_cart.execute()
-			return jsonify({"hasil":'cart {} Deleted'.format(args['id_cart']),'status':'000'})
+			qty_all = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
+			return jsonify({"hasil":'cart {} Deleted'.format(args['id_cart']),'status':'000','quantity':qty_all})
 
 api.add_resource(resource_level_user, '/api/level_user/')
 api.add_resource(resource_user, '/api/user/')
