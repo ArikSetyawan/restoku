@@ -1,5 +1,10 @@
 {% block navbar %}
 <li class="nav-item active"><a href="/" class="nav-link">Menu</a></li>
+{% if session['user'] %}
+<li class="nav-item "><a href="#logout" class="nav-link">Logout</a></li>
+{% else %}
+<li class="nav-item "><a href="#login" class="nav-link">Login</a></li>
+{% endif %}
 {% if session['table'] %}
 <li class="nav-item"><a class="nav-link"><span>Time Left : </span><span id="time"></span></a></li>
 {% endif %}

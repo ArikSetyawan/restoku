@@ -9,7 +9,7 @@
 
 
 import requests
-from flask import make_response, session
+# from flask import make_response, session
 def background_task(id_table):
 	url_cart = "http://127.0.0.1:5000/api/cart/"
 	req_cart = requests.delete(url_cart,params={'id_table':id_table})

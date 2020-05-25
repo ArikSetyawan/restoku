@@ -24,7 +24,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="{{url_for('static',filename='blackdashboard/assets/img/apple-icon.png')}}">
   <link rel="icon" type="image/png" href="{{url_for('static',filename='blackdashboard/assets/img/favicon.png')}}">
   <title>
-    Black Dashboard by Creative Tim
+    Restoku | Users
   </title>
   <!--     Fonts and icons     -->
   <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,600,700,800" rel="stylesheet" />
@@ -174,7 +174,7 @@
           <div class="col-lg-12 col-md-12">
             <div class="card ">
               <div class="card-header">
-                <h2 class="card-title"> User</h2>
+                <h2 class="card-title"> User <a href="#"  data-toggle="modal" data-target="#tambah_user" class="btn btn-primary btn-sm btn-icon"><i class="tim-icons icon-simple-add"></i></a></h2>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
@@ -199,7 +199,7 @@
                         <td>{{i.username}}</td>
                         <td>{{i.password}}</td>
                         <td>{{i.point}}</td>
-                        <td class="text-center"><a href="#{{i.id}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="#" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a></td>
+                        <td class="text-center"><a href="#" data-toggle="modal" data-target="#edit_user{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/remove-user/{{i.id}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a></td>
                       </tr>
                       {% endfor %}
                     </tbody>
@@ -280,6 +280,91 @@
       </ul>
     </div>
   </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="tambah_user" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <form action="/user" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Add User</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              <i class="tim-icons icon-simple-remove"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="">Name</label>
+              <input type="text" name="name" required  class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Level</label>
+              <select name="level_user" class="form-control" style="color: black;">
+                {% for i in data_level_user %}
+                <option value="{{i.id}}">{{i.nama_level}}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="">Username</label>
+              <input type="text" name="username" required  class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="">Password</label>
+              <input type="password" name="password" required  class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit -->
+  {% for i in data_user %}
+  <div class="modal fade" id="edit_user{{loop.index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <form action="/edit-user/{{i.id}}" method="POST">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Edit User</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              <i class="tim-icons icon-simple-remove"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="">Name</label>
+              <input type="text" value="{{i.nama_user}}" name="name" required  class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Level</label>
+              <select name="level_user" class="form-control" style="color: black;">
+                {% for i in data_level_user %}
+                <option value="{{i.id}}">{{i.nama_level}}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="">Username</label>
+              <input type="text" value="{{i.username}}" name="username" required  class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="">Password</label>
+              <input type="password" value="{{i.password}}" name="password" required  class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
   <!--   Core JS Files   -->
   <script src="{{url_for('static',filename='blackdashboard/assets/js/core/jquery.min.js')}}"></script>
   <script src="{{url_for('static',filename='blackdashboard/assets/js/core/popper.min.js')}}"></script>

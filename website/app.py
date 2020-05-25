@@ -19,14 +19,14 @@ from rq.registry import ScheduledJobRegistry
 import jadwal_job
 
 # RedisLabs_Connection
-# url_redis = "redis-13020.c98.us-east-1-4.ec2.cloud.redislabs.com"
-# port_redis = "13020"
-# db_redis = 'restoku'
-# password_redis = '1U8h7PCGI7zLxfme55d493sdcWC0ioGo'
-# redis = Redis(host=url_redis, port=port_redis, db=0, password=password_redis)
+url_redis = "redis-13020.c98.us-east-1-4.ec2.cloud.redislabs.com"
+port_redis = "13020"
+db_redis = 'restoku'
+password_redis = '1U8h7PCGI7zLxfme55d493sdcWC0ioGo'
+redis = Redis(host=url_redis, port=port_redis, db=0, password=password_redis)
 
 # Localhost Connection
-redis = Redis()
+# redis = Redis()
 
 queue = Queue(connection=redis)
 
@@ -35,23 +35,33 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def islogin():
+	if 'user' in session:
+		return True
+	else:
+		False
+
 @app.before_request
 def before_request():
+	# Cancle Job
+	# https://stackoverflow.com/questions/16793879/cancel-an-already-executing-task-in-python-rq
+
+
 	now = time.time()
 	# print(type(now))
 	# print(now)
 	if 'exp' in session:
-		print("session = {}".format(session['exp']))
-		print("now = {}".format(now))
-		print("{} - {} = {}".format(session['exp'],now,int(session['exp'] - now)))
-		print(int(session['exp'] - now))
+		# print("session = {}".format(session['exp']))
+		# print("now = {}".format(now))
+		# print("{} - {} = {}".format(session['exp'],now,int(session['exp'] - now)))
+		# print(int(session['exp'] - now))
 		if int(session['exp'] - now) <= 0:
 			session.pop('exp')
 			session.pop('table')
 			session.pop('quantity')
-			print('expired')
+			# print('expired')
 		else:
-			print('running')
+			# print('running')
 			pass
 	else:
 		pass
@@ -76,6 +86,10 @@ def index():
 			data['description'] = i['description']
 			data_produk.append(data)
 	return render_template('menu.html',data_produk=data_produk)
+
+@app.route('/login',methods=['POST'])
+def login():
+	return 'oke'
 
 @app.route('/dashboard')
 def dashboard():
@@ -145,27 +159,76 @@ def delete_level_user(id_level):
 	else:
 		return redirect(url_for('level_user'))	
 
-@app.route('/user')
+@app.route('/user',methods=['GET',"POST"])
 def user():
-	url_user = "http://127.0.0.1:5000/api/user/"
-	req_user = requests.get(url_user)
-	data_user = []
-	if req_user.status_code == 200:
-		if req_user.json()['status'] == "000":
-			for i in req_user.json()['hasil']:
-				data = {}
-				data['id '] = sToken.dumps(i['id'],salt='id_user')
-				data['id_level'] = sToken.dumps(i['id_level'],salt='id_level_user')
-				data['nama_level'] = i['nama_level']
-				data['username'] = i['username']
-				data['password'] = i['password']
-				data['nama_user'] = i['nama_user']
-				data['point'] = i['point']
-				data_user.append(data)
-			return render_template('/blackdashboard/user.html',data_user=data_user)
-		return render_template('/blackdashboard/user.html',data_user=data_user)
-	return render_template('/blackdashboard/user.html',data_user=data_user)
+	if request.method == 'GET':
+		url_user = "http://127.0.0.1:5000/api/user/"
+		req_user = requests.get(url_user)
+		url_level_user = "http://127.0.0.1:5000/api/level_user/"
+		req_level_user = requests.get(url_level_user)
+		data_user = []
+		data_level_user = []
+		if req_user.status_code and req_level_user.status_code == 200:
+			if req_user.json()['status'] and req_level_user.json()['status'] == "000":
+				for i in req_user.json()['hasil']:
+					data = {}
+					data['id'] = sToken.dumps(i['id'],salt='id_user')
+					data['id_level'] = sToken.dumps(i['id_level'],salt='id_level_user')
+					data['nama_level'] = i['nama_level']
+					data['username'] = i['username']
+					data['password'] = i['password']
+					data['nama_user'] = i['nama_user']
+					data['point'] = i['point']
+					data_user.append(data)
 
+				for j in req_level_user.json()['hasil']:
+					data = {}
+					data['id'] = sToken.dumps(j['id_level'],salt='id_level_user')
+					data['nama_level'] = j['nama_level']
+					data_level_user.append(data)
+				return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
+			return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
+		return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
+	else:
+		id_level = request.form['level_user']
+		nama_user = request.form['name']
+		username = request.form['username']
+		password = request.form['password']
+
+		json = {
+			'id_level':sToken.loads(id_level,salt='id_level_user'),
+			'nama_user' : nama_user,
+			'username':username,
+			'password':password
+		}
+		url_user = "http://127.0.0.1:5000/api/user/"
+		req_user = requests.post(url_user,json=json)
+		return redirect(request.url)
+
+@app.route('/edit-user/<id_user>',methods=['POST'])
+def edit_user(id_user):
+	id_level = request.form['level_user']
+	nama_user = request.form['name']
+	username = request.form['username']
+	password = request.form['password']
+
+	json = {
+		'id_user':sToken.loads(id_user,salt='id_user'),
+		'id_level':sToken.loads(id_level,salt='id_level_user'),
+		'nama_user' : nama_user,
+		'username':username,
+		'password':password
+	}
+	url_user = "http://127.0.0.1:5000/api/user/"
+	req_user = requests.put(url_user,json=json)
+	return redirect(url_for('user'))
+
+@app.route('/remove-user/<id_user>')
+def remove_user(id_user):
+	id_user = sToken.loads(id_user,salt='id_user')
+	url_user = "http://127.0.0.1:5000/api/user/"
+	req_user = requests.delete(url_user,params={'id_user':id_user})
+	return redirect(url_for('user'))
 
 @app.route('/product_category',methods=['GET','POST'])
 def product_category():
@@ -458,6 +521,7 @@ def scan_table_id(id_table):
 	session['quantity'] = 0
 
 	job = queue.enqueue_in(datetime.timedelta(minutes=5),jadwal_job.background_task,dec_id_table)
+	print(job.id)
 	registry = ScheduledJobRegistry(queue=queue)
 
 	resp = make_response(redirect(url_for('index')))
