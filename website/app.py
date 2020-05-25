@@ -639,6 +639,22 @@ def table():
 		req_table = requests.post(url_api,json=json)
 		return redirect(url_for('table'))
 
+@app.route('/update-table/<id_table>',methods=['POST'])
+def update_table(id_table):
+	id_table = sToken.loads(id_table,salt='id_table')
+	nama_table = str(request.form['nama_table'])
+
+	url_api = 'http://127.0.0.1:5000/api/table/'
+	json = {'id_table':id_table,'nama_table':nama_table}
+	req_table = requests.put(url_api,json=json)
+	return redirect(url_for('table'))
+
+@app.route('/remove-table/<id_table>')
+def remove_table(id_table):
+	id_table = sToken.loads(id_table,salt='id_table')
+	url_api = 'http://127.0.0.1:5000/api/table/'
+	req_table = requests.delete(url_api,params={'id_table':id_table})
+	return redirect(url_for('table'))
 
 if __name__ == '__main__':
 	app.run(debug=True,port=5002)

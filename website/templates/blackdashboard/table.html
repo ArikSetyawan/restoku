@@ -214,7 +214,7 @@
                           {{i.id}}
                         </td>
                         <td class="text-center">
-                          <a href="#" data-toggle="modal" data-target="#edit_product_category{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/delete_product_category/{{i.id}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a>
+                          <a href="#" data-toggle="modal" data-target="#edit_table{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/remove-table/{{i.id}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a>
                         </td>
                       </tr>
                       {% endfor %}
@@ -322,25 +322,25 @@
     </div>
   </div>
 
-  {% for i in data_jenis_produk %}
-  <div class="modal fade" id="edit_product_category{{loop.index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  {% for i in data_table %}
+  <div class="modal fade" id="edit_table{{loop.index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
-        <form action="/edit_product_category/{{i.id}}" method="POST">
+        <form action="/update-table/{{i.id}}" method="POST">
           <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Edit Product Category</h5>
+            <h5 class="modal-title" id="exampleModalLabel">Edit Table</h5>
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
               <i class="tim-icons icon-simple-remove"></i>
             </button>
           </div>
           <div class="modal-body">
             <div class="form-group">
-              <label for="">Category Name</label>
-              <input type="text" value="{{i.nama_jenis_product}}" name="category_name" required  class="form-control">
+              <label for="">Table Name</label>
+              <input type="text" value="{{i.nama_table}}" name="nama_table" required  class="form-control">
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-primary">Save changes</button>
+            <button class="btn btn-primary">Save</button>
           </div>
         </form>
       </div>

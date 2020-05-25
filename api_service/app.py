@@ -472,7 +472,7 @@ class resource_table(Resource):
 		parser = reqparse.RequestParser()
 		parser.add_argument('id_table',type=int,required=True,help='id_table.Must int')
 		args = parser.parse_args()
-		d_table = table.delete().where(table.id == id_table)
+		d_table = table.delete().where(table.id == args['id_table'])
 		d_table.execute()
 		return jsonify({"hasil":"table deleted Successful",'status':"000"})
 
