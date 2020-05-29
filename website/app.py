@@ -11,7 +11,7 @@ ALLOWED_EXTENSIONS = set(['png','jpeg','jpg'])
 
 
 # Scheduler
-from rq import Queue
+from rq import Queue, cancel_job
 from redis import Redis
 from rq.registry import ScheduledJobRegistry
 
@@ -29,6 +29,7 @@ redis = Redis(host=url_redis, port=port_redis, db=0, password=password_redis)
 # redis = Redis()
 
 queue = Queue(connection=redis)
+registry = ScheduledJobRegistry(queue=queue)
 
 
 def allowed_file(filename):
@@ -40,6 +41,13 @@ def islogin():
 		return True
 	else:
 		False
+
+def isadmin():
+	if islogin():
+		if session['id_level'] == 1:
+			return True
+		return False
+	return False
 
 @app.before_request
 def before_request():
@@ -59,6 +67,7 @@ def before_request():
 			session.pop('exp')
 			session.pop('table')
 			session.pop('quantity')
+			session.pop('job_id')
 			# print('expired')
 		else:
 			# print('running')
@@ -89,250 +98,397 @@ def index():
 
 @app.route('/login',methods=['POST'])
 def login():
-	return 'oke'
+	if islogin():
+		return redirect(url_for('index'))
+	else:
+		username = request.form['username']
+		password = request.form['password']
+		url_user = "http://127.0.0.1:5000/api/user/"
+		req_user = requests.get(url_user,params={'username':username})
+		if req_user.status_code == 200:
+			if req_user.json()['status'] == '000':
+				if req_user.json()['hasil']['password'] == password:
+					session['user'] = req_user.json()['hasil']['id']
+					session['id_level'] = req_user.json()['hasil']['id_level']
+					if session['id_level'] == 1:
+						if 'table' in session:
+							session.pop('exp')
+							session.pop('table')
+							session.pop('quantity')
+							session.pop('job_id')
+						else:
+							pass
+						return redirect(url_for('dashboard'))
+					else:
+						return redirect(url_for('index'))
+				else:
+					flash("username or password invalid")
+					return redirect(url_for('index'))
+			return redirect(url_for('index'))
+		return redirect(url_for('index'))
+
+@app.route('/logout')
+def logout():
+	if islogin():
+		session.pop('user')
+		session.pop('id_level')
+		return redirect(url_for('index'))
+	else:
+		return redirect(url_for('index'))
 
 @app.route('/dashboard')
 def dashboard():
-	return render_template("blackdashboard/dashboard.html")
+	if isadmin():
+		return render_template("blackdashboard/dashboard.html")
+	else:
+		return redirect(url_for('index'))
 
 @app.route('/level_user',methods=['GET','POST'])
 def level_user():
-	if request.method == 'GET':
-		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
-		req_level_user = requests.get(url_level_user)
-		data_level_user = []
-		if req_level_user.status_code == 200:
-			if req_level_user.json()['status'] == "000":
-				for i in req_level_user.json()['hasil']:
-					data = {}
-					data['id'] = sToken.dumps(i['id_level'],salt="id_level_user")
-					data['nama_level'] = i['nama_level']
-					data_level_user.append(data)
+	if isadmin():
+		if request.method == 'GET':
+			url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+			req_level_user = requests.get(url_level_user)
+			data_level_user = []
+			if req_level_user.status_code == 200:
+				if req_level_user.json()['status'] == "000":
+					for i in req_level_user.json()['hasil']:
+						data = {}
+						data['id'] = sToken.dumps(i['id_level'],salt="id_level_user")
+						data['nama_level'] = i['nama_level']
+						data_level_user.append(data)
 
+					return render_template('blackdashboard/level_user.html',data_level_user=data_level_user)
 				return render_template('blackdashboard/level_user.html',data_level_user=data_level_user)
 			return render_template('blackdashboard/level_user.html',data_level_user=data_level_user)
-		return render_template('blackdashboard/level_user.html',data_level_user=data_level_user)
+		else:
+			d_nama_level = str(request.form['nama_level'])
+			json = {
+				'nama_level':d_nama_level
+			}
+			url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+			req_level_user = requests.post(url_level_user,json=json)
+			if req_level_user.status_code == 200:
+				flash(req_level_user.json()['hasil'])
+				print(req_level_user.json()['hasil'])
+				return redirect(url_for('level_user'))
+			else:
+				return redirect(url_for('level_user'))
 	else:
+		return redirect(url_for('index'))
+
+@app.route('/edit_level_user/<id_level>',methods=['POST'])
+def edit_level_user(id_level):
+	if isadmin():
+		id_level = sToken.loads(id_level,salt='id_level_user')
 		d_nama_level = str(request.form['nama_level'])
+		
 		json = {
+			'id_level':id_level,
 			'nama_level':d_nama_level
 		}
 		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
-		req_level_user = requests.post(url_level_user,json=json)
+		req_level_user = requests.put(url_level_user,json=json)
 		if req_level_user.status_code == 200:
 			flash(req_level_user.json()['hasil'])
 			print(req_level_user.json()['hasil'])
 			return redirect(url_for('level_user'))
 		else:
 			return redirect(url_for('level_user'))
-
-@app.route('/edit_level_user/<id_level>',methods=['POST'])
-def edit_level_user(id_level):
-	id_level = sToken.loads(id_level,salt='id_level_user')
-	d_nama_level = str(request.form['nama_level'])
-	
-	json = {
-		'id_level':id_level,
-		'nama_level':d_nama_level
-	}
-	url_level_user = 'http://127.0.0.1:5000/api/level_user/'
-	req_level_user = requests.put(url_level_user,json=json)
-	if req_level_user.status_code == 200:
-		flash(req_level_user.json()['hasil'])
-		print(req_level_user.json()['hasil'])
-		return redirect(url_for('level_user'))
 	else:
-		return redirect(url_for('level_user'))
+		return redirect(url_for('index'))
 
 @app.route('/delete_level_user/<id_level>')
 def delete_level_user(id_level):
-	id_level = sToken.loads(id_level,salt='id_level_user')
-	params = {
-		'id_level':id_level,
-	}
-	url_level_user = 'http://127.0.0.1:5000/api/level_user/'
-	req_level_user = requests.delete(url_level_user,params=params)
-	if req_level_user.status_code == 200:
-		flash(req_level_user.json()['hasil'])
-		print(req_level_user.json()['hasil'])
-		return redirect(url_for('level_user'))
-	else:
-		return redirect(url_for('level_user'))	
+	if isadmin():
+		id_level = sToken.loads(id_level,salt='id_level_user')
+		params = {
+			'id_level':id_level,
+		}
+		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+		req_level_user = requests.delete(url_level_user,params=params)
+		if req_level_user.status_code == 200:
+			flash(req_level_user.json()['hasil'])
+			print(req_level_user.json()['hasil'])
+			return redirect(url_for('level_user'))
+		else:
+			return redirect(url_for('level_user'))	
+	return redirect(url_for('index'))
 
 @app.route('/user',methods=['GET',"POST"])
 def user():
-	if request.method == 'GET':
-		url_user = "http://127.0.0.1:5000/api/user/"
-		req_user = requests.get(url_user)
-		url_level_user = "http://127.0.0.1:5000/api/level_user/"
-		req_level_user = requests.get(url_level_user)
-		data_user = []
-		data_level_user = []
-		if req_user.status_code and req_level_user.status_code == 200:
-			if req_user.json()['status'] and req_level_user.json()['status'] == "000":
-				for i in req_user.json()['hasil']:
-					data = {}
-					data['id'] = sToken.dumps(i['id'],salt='id_user')
-					data['id_level'] = sToken.dumps(i['id_level'],salt='id_level_user')
-					data['nama_level'] = i['nama_level']
-					data['username'] = i['username']
-					data['password'] = i['password']
-					data['nama_user'] = i['nama_user']
-					data['point'] = i['point']
-					data_user.append(data)
+	if isadmin():
+		if request.method == 'GET':
+			url_user = "http://127.0.0.1:5000/api/user/"
+			req_user = requests.get(url_user)
+			url_level_user = "http://127.0.0.1:5000/api/level_user/"
+			req_level_user = requests.get(url_level_user)
+			data_user = []
+			data_level_user = []
+			if req_user.status_code and req_level_user.status_code == 200:
+				if req_user.json()['status'] and req_level_user.json()['status'] == "000":
+					for i in req_user.json()['hasil']:
+						data = {}
+						data['id'] = sToken.dumps(i['id'],salt='id_user')
+						data['id_level'] = sToken.dumps(i['id_level'],salt='id_level_user')
+						data['nama_level'] = i['nama_level']
+						data['username'] = i['username']
+						data['password'] = i['password']
+						data['nama_user'] = i['nama_user']
+						data['point'] = i['point']
+						data_user.append(data)
 
-				for j in req_level_user.json()['hasil']:
-					data = {}
-					data['id'] = sToken.dumps(j['id_level'],salt='id_level_user')
-					data['nama_level'] = j['nama_level']
-					data_level_user.append(data)
+					for j in req_level_user.json()['hasil']:
+						data = {}
+						data['id'] = sToken.dumps(j['id_level'],salt='id_level_user')
+						data['nama_level'] = j['nama_level']
+						data_level_user.append(data)
+					return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
 				return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
 			return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
-		return render_template('/blackdashboard/user.html',data_user=data_user,data_level_user=data_level_user)
+		else:
+			id_level = request.form['level_user']
+			nama_user = request.form['name']
+			username = request.form['username']
+			password = request.form['password']
+
+			json = {
+				'id_level':sToken.loads(id_level,salt='id_level_user'),
+				'nama_user' : nama_user,
+				'username':username,
+				'password':password
+			}
+			url_user = "http://127.0.0.1:5000/api/user/"
+			req_user = requests.post(url_user,json=json)
+			return redirect(request.url)
 	else:
+		return redirect(url_for('index'))
+
+@app.route('/edit-user/<id_user>',methods=['POST'])
+def edit_user(id_user):
+	if isadmin():
 		id_level = request.form['level_user']
 		nama_user = request.form['name']
 		username = request.form['username']
 		password = request.form['password']
 
 		json = {
+			'id_user':sToken.loads(id_user,salt='id_user'),
 			'id_level':sToken.loads(id_level,salt='id_level_user'),
 			'nama_user' : nama_user,
 			'username':username,
 			'password':password
 		}
 		url_user = "http://127.0.0.1:5000/api/user/"
-		req_user = requests.post(url_user,json=json)
-		return redirect(request.url)
-
-@app.route('/edit-user/<id_user>',methods=['POST'])
-def edit_user(id_user):
-	id_level = request.form['level_user']
-	nama_user = request.form['name']
-	username = request.form['username']
-	password = request.form['password']
-
-	json = {
-		'id_user':sToken.loads(id_user,salt='id_user'),
-		'id_level':sToken.loads(id_level,salt='id_level_user'),
-		'nama_user' : nama_user,
-		'username':username,
-		'password':password
-	}
-	url_user = "http://127.0.0.1:5000/api/user/"
-	req_user = requests.put(url_user,json=json)
-	return redirect(url_for('user'))
+		req_user = requests.put(url_user,json=json)
+		return redirect(url_for('user'))
+	else:
+		return redirect(url_for('index'))
 
 @app.route('/remove-user/<id_user>')
 def remove_user(id_user):
-	id_user = sToken.loads(id_user,salt='id_user')
-	url_user = "http://127.0.0.1:5000/api/user/"
-	req_user = requests.delete(url_user,params={'id_user':id_user})
-	return redirect(url_for('user'))
+	if isadmin():
+		id_user = sToken.loads(id_user,salt='id_user')
+		url_user = "http://127.0.0.1:5000/api/user/"
+		req_user = requests.delete(url_user,params={'id_user':id_user})
+		return redirect(url_for('user'))
+	else:
+		return redirect(url_for('index'))
 
 @app.route('/product_category',methods=['GET','POST'])
 def product_category():
-	if request.method == 'GET':
+	if isadmin():
+		if request.method == 'GET':
+			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+			req_jenis_produk = requests.get(url_jenis_produk)
+			data_jenis_produk = []
+			if req_jenis_produk.status_code == 200:
+				if req_jenis_produk.json()['status'] == "000":
+					for i in req_jenis_produk.json()['hasil']:
+						data = {}
+						data['id'] = sToken.dumps(i['id'],salt='id_jenis_product')
+						data['nama_jenis_product'] = i['nama_jenis_product']
+						data_jenis_produk.append(data)
+					return render_template('blackdashboard/product_category.html',data_jenis_produk=data_jenis_produk)
+				return render_template('blackdashboard/product_category.html',data_jenis_produk=data_jenis_produk)
+			return render_template('blackdashboard/product_category.html',data_jenis_produk=data_jenis_produk)
+		else:
+			d_nama_kategori = request.form['category_name']
+			json = {
+				'nama_jenis_product':d_nama_kategori
+			}
+			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+			req_jenis_produk = requests.post(url_jenis_produk,json=json)
+			if req_jenis_produk.status_code == 200:
+				flash(req_jenis_produk.json()['hasil'])
+				print(req_jenis_produk.json()['hasil'])
+				return redirect(url_for('product_category'))
+			else:
+				flash(req_jenis_produk.json()['hasil'])
+				print(req_jenis_produk.json()['hasil'])
+				return redirect(url_for('product_category'))
+	else:
+		return redirect(url_for('index'))
+
+@app.route('/edit_product_category/<id_jenis_product>',methods=['POST'])
+def edit_product_category(id_jenis_product):
+	if isadmin():
+		id_jenis_product = sToken.loads(id_jenis_product,salt='id_jenis_product')
+		d_nama_kategori = request.form['category_name']
+		json = {
+			'id_jenis_product':id_jenis_product,
+			'nama_jenis_product':d_nama_kategori
+		}
 		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
-		req_jenis_produk = requests.get(url_jenis_produk)
-		data_jenis_produk = []
+		req_jenis_produk = requests.put(url_jenis_produk,json=json)
 		if req_jenis_produk.status_code == 200:
-			if req_jenis_produk.json()['status'] == "000":
+			flash(req_jenis_produk.json()['hasil'])
+			print(req_jenis_produk.json()['hasil'])
+			return redirect(url_for('product_category'))
+		else:
+			flash(req_jenis_produk.json()['hasil'])
+			print(req_jenis_produk.json()['hasil'])
+			return redirect(url_for('product_category'))
+	else:
+		return redirect(url_for('index'))
+
+@app.route('/delete_product_category/<id_jenis_product>')
+def delete_product_category(id_jenis_product):
+	if isadmin():
+		id_jenis_product = sToken.loads(id_jenis_product,salt='id_jenis_product')
+		params = {
+			'id_jenis_product':id_jenis_product,
+		}
+		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+		req_jenis_produk = requests.delete(url_jenis_produk,params=params)
+		if req_jenis_produk.status_code == 200:
+			flash(req_jenis_produk.json()['hasil'])
+			print(req_jenis_produk.json()['hasil'])
+			return redirect(url_for('product_category'))
+		else:
+			flash(req_jenis_produk.json()['hasil'])
+			print(req_jenis_produk.json()['hasil'])
+			return redirect(url_for('product_category'))
+	else:
+		return redirect(url_for('index'))
+
+
+@app.route('/product',methods=['POST',"GET"])
+def product():
+	if isadmin():
+		if request.method == "GET":
+			url_produk = "http://127.0.0.1:5000/api/product/"
+			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+			
+			req_produk = requests.get(url_produk)
+			req_jenis_produk = requests.get(url_jenis_produk)
+			
+			if req_produk.json()['status'] and req_jenis_produk.json()['status'] == "000":
+				data_produk = []
+				for i in req_produk.json()['hasil']:
+					data = {}
+					data['id'] = sToken.dumps(i['id'],salt='id_produk')
+					data['id_jenis_product'] = sToken.dumps(i['id_jenis_product'],salt='id_jenis_product')
+					data['jenis_product'] = i['jenis_product']
+					data['nama_produk'] = i['nama_produk']
+					data['harga_produk'] = i['harga_produk']
+					data['foto_produk'] = i['foto_produk']
+					data['foto_produk_enc'] = sToken.dumps(i['foto_produk'],salt='foto_produk')
+					data['description'] = i['description']
+					data_produk.append(data)
+
+				data_jenis_produk = []
 				for i in req_jenis_produk.json()['hasil']:
 					data = {}
 					data['id'] = sToken.dumps(i['id'],salt='id_jenis_product')
 					data['nama_jenis_product'] = i['nama_jenis_product']
 					data_jenis_produk.append(data)
-				return render_template('blackdashboard/product_category.html',data_jenis_produk=data_jenis_produk)
-			return render_template('blackdashboard/product_category.html',data_jenis_produk=data_jenis_produk)
-		return render_template('blackdashboard/product_category.html',data_jenis_produk=data_jenis_produk)
-	else:
-		d_nama_kategori = request.form['category_name']
-		json = {
-			'nama_jenis_product':d_nama_kategori
-		}
-		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
-		req_jenis_produk = requests.post(url_jenis_produk,json=json)
-		if req_jenis_produk.status_code == 200:
-			flash(req_jenis_produk.json()['hasil'])
-			print(req_jenis_produk.json()['hasil'])
-			return redirect(url_for('product_category'))
+
+				return render_template('blackdashboard/products.html',data_produk=data_produk,data_jenis_produk=data_jenis_produk)
+			else:
+				return render_template('product.html')
 		else:
-			flash(req_jenis_produk.json()['hasil'])
-			print(req_jenis_produk.json()['hasil'])
-			return redirect(url_for('product_category'))
+			nama_produk = request.form['nama_produk']
+			id_jenis_product = sToken.loads(request.form['jenis_product'],salt='id_jenis_product')
+			harga_produk = request.form['harga_produk']
+			description = request.form['description']
 
-@app.route('/edit_product_category/<id_jenis_product>',methods=['POST'])
-def edit_product_category(id_jenis_product):
-	id_jenis_product = sToken.loads(id_jenis_product,salt='id_jenis_product')
-	d_nama_kategori = request.form['category_name']
-	json = {
-		'id_jenis_product':id_jenis_product,
-		'nama_jenis_product':d_nama_kategori
-	}
-	url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
-	req_jenis_produk = requests.put(url_jenis_produk,json=json)
-	if req_jenis_produk.status_code == 200:
-		flash(req_jenis_produk.json()['hasil'])
-		print(req_jenis_produk.json()['hasil'])
-		return redirect(url_for('product_category'))
+			if 'file' not in request.files:
+				return redirect(request.url)
+			file = request.files['file']
+			# if user does not select file, browser also
+			# submit an empty part without filename
+			if file.filename == '':
+				return redirect(request.url)
+			if file and allowed_file(file.filename):
+				filename = secure_filename(file.filename)
+
+				base64file = base64.b64encode(file.read()).decode("utf-8")
+				
+				ext = filename.split(".")
+
+				form = None
+
+				for i in ext:
+					allowed = ['jpg','jpeg','png']
+					if i in allowed:
+						form = i
+						break
+
+				if form == None:
+					return 'not supported format file'
+				else:
+					pass
+
+				ext = form
+						
+				json = {
+					'gambar' : base64file,
+					'ext' : ext
+				}
+				photo_link = 'http://127.0.0.1:5001/api/restokuimage/'
+				# photo_link = 'https://restoimg.herokuapp.com/api/restokuimage/'
+				req_photo = requests.post(photo_link,json=json)
+				result = req_photo.json()
+				if result['status'] == 'error':
+					return redirect(request.url)
+				elif result['status'] == 'success':
+					url = 'http://127.0.0.1:5000/api/product/'
+					json = {
+						"nama_produk": nama_produk,
+						"harga_produk": harga_produk,
+						"id_jenis_product": id_jenis_product,
+						"foto_produk": result['link'],
+						'description': description
+					}
+					req = requests.post(url,json=json)
+					if req.json()['status'] == "000":
+						return redirect(url_for('product'))
+					elif req.json()['status'] == '002':
+						json_file = {"old_filename":req.json()['foto_produk']}
+						req_file = requests.delete(photo_link,json=json_file)
+						if req_file.json()['status'] == 'success':
+							flash(req.json()['hasil'])
+							print((req.json()['hasil']))
+							return redirect(url_for('product'))
+						else:
+							flash("Opps Something Wrong in delete photo when product name is already exists")
+							print("Opps Something Wrong in delete photo when product name is already exists")
+							return redirect(url_for('product'))
+					else:
+						flash(req.json()['hasil'])
+						return redirect(url_for('product'))
+				else:
+					return redirect(url_for('product'))
 	else:
-		flash(req_jenis_produk.json()['hasil'])
-		print(req_jenis_produk.json()['hasil'])
-		return redirect(url_for('product_category'))
+		return redirect(url_for('index'))
 
-@app.route('/delete_product_category/<id_jenis_product>')
-def delete_product_category(id_jenis_product):
-	id_jenis_product = sToken.loads(id_jenis_product,salt='id_jenis_product')
-	params = {
-		'id_jenis_product':id_jenis_product,
-	}
-	url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
-	req_jenis_produk = requests.delete(url_jenis_produk,params=params)
-	if req_jenis_produk.status_code == 200:
-		flash(req_jenis_produk.json()['hasil'])
-		print(req_jenis_produk.json()['hasil'])
-		return redirect(url_for('product_category'))
-	else:
-		flash(req_jenis_produk.json()['hasil'])
-		print(req_jenis_produk.json()['hasil'])
-		return redirect(url_for('product_category'))
-
-
-@app.route('/product',methods=['POST',"GET"])
-def product():
-	if request.method == "GET":
-		url_produk = "http://127.0.0.1:5000/api/product/"
-		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
-		
-		req_produk = requests.get(url_produk)
-		req_jenis_produk = requests.get(url_jenis_produk)
-		
-		if req_produk.json()['status'] and req_jenis_produk.json()['status'] == "000":
-			data_produk = []
-			for i in req_produk.json()['hasil']:
-				data = {}
-				data['id'] = sToken.dumps(i['id'],salt='id_produk')
-				data['id_jenis_product'] = sToken.dumps(i['id_jenis_product'],salt='id_jenis_product')
-				data['jenis_product'] = i['jenis_product']
-				data['nama_produk'] = i['nama_produk']
-				data['harga_produk'] = i['harga_produk']
-				data['foto_produk'] = i['foto_produk']
-				data['foto_produk_enc'] = sToken.dumps(i['foto_produk'],salt='foto_produk')
-				data['description'] = i['description']
-				data_produk.append(data)
-
-			data_jenis_produk = []
-			for i in req_jenis_produk.json()['hasil']:
-				data = {}
-				data['id'] = sToken.dumps(i['id'],salt='id_jenis_product')
-				data['nama_jenis_product'] = i['nama_jenis_product']
-				data_jenis_produk.append(data)
-
-			return render_template('blackdashboard/products.html',data_produk=data_produk,data_jenis_produk=data_jenis_produk)
-		else:
-			return render_template('product.html')
-	else:
+@app.route('/editproduct/<idproduct>/<filenamephoto>', methods=['POST'])
+def editproduct(idproduct,filenamephoto):
+	if isadmin():
+		id_produk = sToken.loads(idproduct,salt='id_produk')
+		old_filename = sToken.loads(filenamephoto,salt='foto_produk')
+			
 		nama_produk = request.form['nama_produk']
 		id_jenis_product = sToken.loads(request.form['jenis_product'],salt='id_jenis_product')
 		harga_produk = request.form['harga_produk']
@@ -341,10 +497,21 @@ def product():
 		if 'file' not in request.files:
 			return redirect(request.url)
 		file = request.files['file']
-		# if user does not select file, browser also
-		# submit an empty part without filename
+		
+		# Handle jika user tidak ingin mengubah gambar
 		if file.filename == '':
-			return redirect(request.url)
+			url = 'http://127.0.0.1:5000/api/product/'
+			json = {
+				"id_product":id_produk,
+				"nama_produk": nama_produk,
+				"harga_produk": int(harga_produk),
+				"id_jenis_product": id_jenis_product,
+				"foto_produk": old_filename,
+				'description': description
+			}
+			req = requests.put(url,json=json)
+			return redirect(url_for('product'))
+		
 		if file and allowed_file(file.filename):
 			filename = secure_filename(file.filename)
 
@@ -369,119 +536,32 @@ def product():
 					
 			json = {
 				'gambar' : base64file,
-				'ext' : ext
+				'ext' : ext,
+				'old_filename' : old_filename
 			}
 			photo_link = 'http://127.0.0.1:5001/api/restokuimage/'
 			# photo_link = 'https://restoimg.herokuapp.com/api/restokuimage/'
-			req_photo = requests.post(photo_link,json=json)
+			req_photo = requests.put(photo_link,json=json)
 			result = req_photo.json()
 			if result['status'] == 'error':
 				return redirect(request.url)
 			elif result['status'] == 'success':
 				url = 'http://127.0.0.1:5000/api/product/'
 				json = {
+					"id_product":id_produk,
 					"nama_produk": nama_produk,
 					"harga_produk": harga_produk,
 					"id_jenis_product": id_jenis_product,
 					"foto_produk": result['link'],
 					'description': description
 				}
-				req = requests.post(url,json=json)
-				if req.json()['status'] == "000":
-					return redirect(url_for('product'))
-				elif req.json()['status'] == '002':
-					json_file = {"old_filename":req.json()['foto_produk']}
-					req_file = requests.delete(photo_link,json=json_file)
-					if req_file.json()['status'] == 'success':
-						flash(req.json()['hasil'])
-						print((req.json()['hasil']))
-						return redirect(url_for('product'))
-					else:
-						flash("Opps Something Wrong in delete photo when product name is already exists")
-						print("Opps Something Wrong in delete photo when product name is already exists")
-						return redirect(url_for('product'))
-				else:
-					flash(req.json()['hasil'])
-					return redirect(url_for('product'))
+				req = requests.put(url,json=json)
+
+				return redirect(url_for('product'))
 			else:
 				return redirect(url_for('product'))
-
-@app.route('/editproduct/<idproduct>/<filenamephoto>', methods=['POST'])
-def editproduct(idproduct,filenamephoto):
-	id_produk = sToken.loads(idproduct,salt='id_produk')
-	old_filename = sToken.loads(filenamephoto,salt='foto_produk')
-		
-	nama_produk = request.form['nama_produk']
-	id_jenis_product = sToken.loads(request.form['jenis_product'],salt='id_jenis_product')
-	harga_produk = request.form['harga_produk']
-	description = request.form['description']
-
-	if 'file' not in request.files:
-		return redirect(request.url)
-	file = request.files['file']
-	
-	# Handle jika user tidak ingin mengubah gambar
-	if file.filename == '':
-		url = 'http://127.0.0.1:5000/api/product/'
-		json = {
-			"id_product":id_produk,
-			"nama_produk": nama_produk,
-			"harga_produk": int(harga_produk),
-			"id_jenis_product": id_jenis_product,
-			"foto_produk": old_filename,
-			'description': description
-		}
-		req = requests.put(url,json=json)
-		return redirect(url_for('product'))
-	
-	if file and allowed_file(file.filename):
-		filename = secure_filename(file.filename)
-
-		base64file = base64.b64encode(file.read()).decode("utf-8")
-		
-		ext = filename.split(".")
-
-		form = None
-
-		for i in ext:
-			allowed = ['jpg','jpeg','png']
-			if i in allowed:
-				form = i
-				break
-
-		if form == None:
-			return 'not supported format file'
-		else:
-			pass
-
-		ext = form
-				
-		json = {
-			'gambar' : base64file,
-			'ext' : ext,
-			'old_filename' : old_filename
-		}
-		photo_link = 'http://127.0.0.1:5001/api/restokuimage/'
-		# photo_link = 'https://restoimg.herokuapp.com/api/restokuimage/'
-		req_photo = requests.put(photo_link,json=json)
-		result = req_photo.json()
-		if result['status'] == 'error':
-			return redirect(request.url)
-		elif result['status'] == 'success':
-			url = 'http://127.0.0.1:5000/api/product/'
-			json = {
-				"id_product":id_produk,
-				"nama_produk": nama_produk,
-				"harga_produk": harga_produk,
-				"id_jenis_product": id_jenis_product,
-				"foto_produk": result['link'],
-				'description': description
-			}
-			req = requests.put(url,json=json)
-
-			return redirect(url_for('product'))
-		else:
-			return redirect(url_for('product'))
+	else:
+		return redirect(url_for('index'))
 
 @app.route("/deleteproduct/<idproduct>/<filenamephoto>")
 def deleteproduct(idproduct,filenamephoto):
@@ -506,24 +586,75 @@ def deleteproduct(idproduct,filenamephoto):
 		print("gagal")
 		return redirect(url_for('product'))
 
+@app.route('/table',methods=['GET','POST'])
+def table():
+	if isadmin():
+		if request.method == 'GET':
+			url_api = 'http://127.0.0.1:5000/api/table/'
+			req_table = requests.get(url_api)
+			
+			data_table = []
+
+			if req_table.status_code == 200:
+				if req_table.json()['status'] == '000':
+					for i in req_table.json()['hasil']:
+						data = {}
+						data['id'] = sToken.dumps(i['id'],salt='id_table')
+						data['nama_table'] = i['nama_table']
+						data['available'] = i['available']
+						data_table.append(data)
+				return render_template('blackdashboard/table.html',data_table=data_table)
+			return render_template('blackdashboard/table.html',data_table=data_table)
+		else:
+			nama_table = str(request.form['nama_table'])
+
+			url_api = 'http://127.0.0.1:5000/api/table/'
+			json = {'nama_table':nama_table}
+			req_table = requests.post(url_api,json=json)
+			return redirect(url_for('table'))
+	else:
+		return redirect(url_for('index'))
+
+@app.route('/update-table/<id_table>',methods=['POST'])
+def update_table(id_table):
+	if isadmin():
+		id_table = sToken.loads(id_table,salt='id_table')
+		nama_table = str(request.form['nama_table'])
+
+		url_api = 'http://127.0.0.1:5000/api/table/'
+		json = {'id_table':id_table,'nama_table':nama_table}
+		req_table = requests.put(url_api,json=json)
+		return redirect(url_for('table'))
+	else:
+		return redirect(url_for('index'))
+
+@app.route('/remove-table/<id_table>')
+def remove_table(id_table):
+	if isadmin():
+		id_table = sToken.loads(id_table,salt='id_table')
+		url_api = 'http://127.0.0.1:5000/api/table/'
+		req_table = requests.delete(url_api,params={'id_table':id_table})
+		return redirect(url_for('table'))
+	else:
+		return redirect(url_for('index'))
+
 @app.route('/scan-table')
 def scan_table():
-	if 'table' in session:
+	if 'table' in session or isadmin():
 		return redirect(url_for('index'))
 	return render_template('scan_table.html')
 
 @app.route('/scan-table/<id_table>')
 def scan_table_id(id_table):
-	if 'table' in session:
+	if 'table' in session or isadmin():
 		return redirect(url_for('index'))
 	dec_id_table = sToken.loads(id_table,salt='id_table')
 	session['table'] = dec_id_table
 	session['quantity'] = 0
 
 	job = queue.enqueue_in(datetime.timedelta(minutes=5),jadwal_job.background_task,dec_id_table)
-	print(job.id)
-	registry = ScheduledJobRegistry(queue=queue)
-
+	session['job_id'] = job.id
+	
 	resp = make_response(redirect(url_for('index')))
 	expire_date = datetime.datetime.now()
 	expire_date = expire_date + datetime.timedelta(minutes=5)
@@ -582,79 +713,69 @@ def add_to_cart(id_produk):
 
 @app.route('/update-cart-item',methods=['POST'])
 def update_cart_item():
-	id_cart = request.form['id_cart']
-	id_cart = sToken.loads(id_cart,salt='id_cart')
-	qty = request.form['quantity']
+	if 'table' in session:
+		id_cart = request.form['id_cart']
+		id_cart = sToken.loads(id_cart,salt='id_cart')
+		qty = request.form['quantity']
 
-	# Get Cart Item Data
-	url_cart = "http://127.0.0.1:5000/api/cart/"
-	req_cart = requests.get(url=url_cart,params={'id_table':session['table'],'id_cart':id_cart})
-	
-	if req_cart.status_code == 200 and req_cart.json()['status'] == "000":
-		# Updating Cart
-		json = {
-			'id_cart':id_cart,
-			'id_product':req_cart.json()['hasil']['id_product'],
-			'id_table':session['table'],
-			'quantity':qty
-		}
+		# Get Cart Item Data
 		url_cart = "http://127.0.0.1:5000/api/cart/"
-		req_cart = requests.put(url_cart,json=json)
-		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
-		return 'Berhasil Di Ubah'
+		req_cart = requests.get(url=url_cart,params={'id_table':session['table'],'id_cart':id_cart})
+		
+		if req_cart.status_code == 200 and req_cart.json()['status'] == "000":
+			# Updating Cart
+			json = {
+				'id_cart':id_cart,
+				'id_product':req_cart.json()['hasil']['id_product'],
+				'id_table':session['table'],
+				'quantity':qty
+			}
+			url_cart = "http://127.0.0.1:5000/api/cart/"
+			req_cart = requests.put(url_cart,json=json)
+			session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
+			return 'Berhasil Di Ubah'
+		else:
+			return 'gagal'
 	else:
 		return 'gagal'
 
 @app.route('/delete-cart-item/<id_cart>')
 def delete_cart_item(id_cart):
-	id_cart = sToken.loads(id_cart,salt='id_cart',max_age=300)
-	url_cart = "http://127.0.0.1:5000/api/cart/"
-	req_cart = requests.delete(url_cart,params={'id_table':session['table'],'id_cart':id_cart})
-	session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
-	return redirect(url_for('cart'))
+	if 'table' in session:
+		id_cart = sToken.loads(id_cart,salt='id_cart',max_age=300)
+		url_cart = "http://127.0.0.1:5000/api/cart/"
+		req_cart = requests.delete(url_cart,params={'id_table':session['table'],'id_cart':id_cart})
+		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
+		return redirect(url_for('cart'))
+	return redirect(url_for('index'))
 
-@app.route('/table',methods=['GET','POST'])
-def table():
-	if request.method == 'GET':
-		url_api = 'http://127.0.0.1:5000/api/table/'
-		req_table = requests.get(url_api)
-		
-		data_table = []
-
-		if req_table.status_code == 200:
-			if req_table.json()['status'] == '000':
-				for i in req_table.json()['hasil']:
-					data = {}
-					data['id'] = sToken.dumps(i['id'],salt='id_table')
-					data['nama_table'] = i['nama_table']
-					data['available'] = i['available']
-					data_table.append(data)
-			return render_template('blackdashboard/table.html',data_table=data_table)
-		return render_template('blackdashboard/table.html',data_table=data_table)
+@app.route('/checkout')
+def checkout():
+	if 'table' in session:
+		url_checkout = "http://127.0.0.1:5000/api/checkout/"
+		if islogin():
+			if isadmin():
+				return redirect(url_for('index'))
+			else:
+				params = {'id_table':int(session['table']),'id_user':int(session['user'])}
+		else:
+			params = {'id_table':int(session['table'])}
+		print(params)
+		req_checkout = requests.post(url_checkout,params=params)
+		if req_checkout.status_code == 200:
+			if req_checkout.json()['status'] == '000':
+				registry.remove(session['job_id'],delete_job=True)
+				session.pop('exp')
+				session.pop('table')
+				session.pop('quantity')
+				session.pop('job_id')
+				return 'Berhasil Order'
+			else:
+				return req_checkout.json()['hasil']
+		else:
+			return 'gagal'				
 	else:
-		nama_table = str(request.form['nama_table'])
-
-		url_api = 'http://127.0.0.1:5000/api/table/'
-		json = {'nama_table':nama_table}
-		req_table = requests.post(url_api,json=json)
-		return redirect(url_for('table'))
-
-@app.route('/update-table/<id_table>',methods=['POST'])
-def update_table(id_table):
-	id_table = sToken.loads(id_table,salt='id_table')
-	nama_table = str(request.form['nama_table'])
-
-	url_api = 'http://127.0.0.1:5000/api/table/'
-	json = {'id_table':id_table,'nama_table':nama_table}
-	req_table = requests.put(url_api,json=json)
-	return redirect(url_for('table'))
-
-@app.route('/remove-table/<id_table>')
-def remove_table(id_table):
-	id_table = sToken.loads(id_table,salt='id_table')
-	url_api = 'http://127.0.0.1:5000/api/table/'
-	req_table = requests.delete(url_api,params={'id_table':id_table})
-	return redirect(url_for('table'))
+		return redirect(url_for('index'))
 
 if __name__ == '__main__':
 	app.run(debug=True,port=5002)

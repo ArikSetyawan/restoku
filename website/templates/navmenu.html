@@ -1,9 +1,12 @@
 {% block navbar %}
 <li class="nav-item active"><a href="/" class="nav-link">Menu</a></li>
 {% if session['user'] %}
-<li class="nav-item "><a href="#logout" class="nav-link">Logout</a></li>
+<li class="nav-item "><a href="/logout" class="nav-link">Logout</a></li>
 {% else %}
-<li class="nav-item "><a href="#login" class="nav-link">Login</a></li>
+<li class="nav-item "><a href="#" type="button" data-toggle="modal" data-target="#login_modal" class="nav-link">Login</a></li>
+{% endif %}
+{% if session['id_level'] == 1 %}
+<li class="nav-item "><a href="/dashboard" class="nav-link">Dashboard</a></li>
 {% endif %}
 {% if session['table'] %}
 <li class="nav-item"><a class="nav-link"><span>Time Left : </span><span id="time"></span></a></li>

@@ -1,6 +1,7 @@
 from flask import Flask,jsonify, request
 from flask_restful import Api, Resource, reqparse
 from peewee import *
+import random, datetime, string
 
 # status docs:
 # 000 = Success
@@ -50,9 +51,25 @@ class cart(BaseModel):
 	quantity = IntegerField()
 	sub_price = IntegerField()
 
+class checkout(BaseModel):
+	id = AutoField(primary_key=True)
+	trx_id = CharField()
+	waktu_trx = DateTimeField()
+	id_table = ForeignKeyField(table)
+	id_user = ForeignKeyField(user,null=True)
+	id_product = ForeignKeyField(product)
+	quantity = IntegerField()
+	sub_price = IntegerField()
+	payment = BooleanField(default=False)
+
+
 def create_tables():
 	with database:
-		database.create_tables([level_user,user, jenis_product,product,table,cart])
+		database.create_tables([level_user,user, jenis_product,product,table,cart,checkout])
+
+def generate_datetime():
+	tanggal = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+	return tanggal
 
 app = Flask(__name__)
 api = Api(app)
@@ -130,8 +147,9 @@ class resource_user(Resource):
 	def get(self):
 		parser = reqparse.RequestParser()
 		parser.add_argument('id_user',type=int,help='must int, id_user')
+		parser.add_argument('username',type=str,help='must str, username')
 		args = parser.parse_args()
-		if args['id_user'] is None:
+		if args['id_user'] is None and args['username'] is None:
 			# QUery User
 			q_user = user.select()
 			data_user = []
@@ -152,7 +170,12 @@ class resource_user(Resource):
 		else:
 			try:
 				# Query User
-				q_user = user.get(user.id == args['id_user'])
+				if args['id_user'] != None and args['username'] != None :
+					q_user = user.get(user.id == args['id_user'])
+				elif args['id_user'] is None:
+					q_user = user.get(user.username == args['username'])
+				else:
+					q_user = user.get(user.id == args['id_user'])
 				data_user = {
 					'id' : q_user.id,
 					'id_level' : int(str(q_user.id_level)),
@@ -609,12 +632,77 @@ class resource_cart(Resource):
 			qty_all = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
 			return jsonify({"hasil":'cart {} Deleted'.format(args['id_cart']),'status':'000','quantity':qty_all})
 
+class resource_checkout(Resource):
+	def post(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('id_table',required=True,type=int,help='must int, id_table, required')
+		parser.add_argument('id_user',type=int,help='must int, id_table')
+		args = parser.parse_args()
+
+		# check user
+		if args['id_user'] is not None:
+			try:
+				# query user
+				d_user = user.get(user.id == args['id_user']).id
+			except DoesNotExist:
+				return jsonify({"hasil":"User Not Found","status":"001"})
+		else:
+			d_user = None
+		
+		# query cart
+		query_cart = cart.select().where(cart.id_table == args['id_table'])
+		# check if any item in cart
+		if query_cart.exists():
+			# Insert into checkout
+			waktu_trx = generate_datetime()
+			trx_id = 'TRX'+''.join(random.choice(string.digits) for _ in range(14))
+			for i in query_cart:
+				checkout.create(
+					trx_id=trx_id,
+					waktu_trx=waktu_trx,
+					id_table = i.id_table,
+					id_user = d_user,
+					id_product = i.id_product,
+					quantity = i.quantity,
+					sub_price = i.sub_price)
+			
+			# Make return Orders/bill
+			data_cart = []
+			for i in query_cart:
+				data = {}
+				data['id'] = i.id
+				data['id_table'] = int(str(i.id_table))
+				data['nama_table'] = i.id_table.nama_table
+				data['id_user'] = i.id_user
+				data['id_product'] = int(str(i.id_product))
+				data['nama_produk'] = i.id_product.nama_produk
+				data['foto_produk'] = i.id_product.foto_produk
+				data['description'] = i.id_product.description
+				data['harga_produk'] = i.id_product.harga_produk
+				data['quantity'] = i.quantity
+				data['sub_price'] = i.sub_price
+				data_cart.append(data)
+			orders = {}
+			orders['item'] = data_cart
+			orders['qty_all_item'] = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
+			orders['grand_price'] = cart.select(fn.SUM(cart.sub_price)).where(cart.id_table == args['id_table']).scalar()
+			
+			# Delete all item in cart
+			d_cart = cart.delete().where(cart.id_table == args['id_table'])
+			d_cart.execute()
+			return jsonify({"hasil":"checkout Success",'orders':orders,'status':'000'})
+		# Return checkout failed because no items found in cart
+		else:
+			return jsonify({"hasil":"checkout failed. no item found in cart",'status':'001'})
+
+
 api.add_resource(resource_level_user, '/api/level_user/')
 api.add_resource(resource_user, '/api/user/')
 api.add_resource(resource_jenis_product,'/api/jenis_product/')
 api.add_resource(resource_product, '/api/product/')
 api.add_resource(resource_table, '/api/table/')
 api.add_resource(resource_cart, '/api/cart/')
+api.add_resource(resource_checkout, '/api/checkout/')
 
 if __name__ == '__main__':
 	create_tables()

@@ -1,0 +1,28 @@
+<!-- Modal -->
+<div class="modal" id="login_modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+    	<form action="/login" method="POST">
+      <div class="modal-header">
+        <h5 class="modal-title text-dark">Login</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+      	<div class="form-group">
+      <label for="">Username</label>
+      <input type="text" name="username" required  class="form-control" style="border: 1px solid black !important; color: black !important; border-radius: 4px !important;">
+    </div>
+    <div class="form-group">
+      <label for="">Password</label>
+      <input type="password" name="password" required  class="form-control" style="border: 1px solid black !important; color: black !important; border-radius: 4px !important;">
+    </div>
+      </div>
+      <div class="modal-footer">
+      	<button class="btn">Login</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
