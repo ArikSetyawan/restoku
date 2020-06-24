@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, session, make_response
+from flask import Flask, request, render_template, redirect, url_for, flash, session, make_response,jsonify
 import requests,base64, datetime, random, time
 from werkzeug.utils import secure_filename
 from itsdangerous import URLSafeTimedSerializer, BadData
@@ -45,6 +45,20 @@ def islogin():
 def isadmin():
 	if islogin():
 		if session['id_level'] == 1:
+			return True
+		return False
+	return False
+
+def isCashier():
+	if islogin():
+		if session['id_level'] == 2:
+			return True
+		return False
+	return False
+
+def isChef():
+	if islogin():
+		if session['id_level'] == 3:
 			return True
 		return False
 	return False
@@ -110,7 +124,7 @@ def login():
 				if req_user.json()['hasil']['password'] == password:
 					session['user'] = req_user.json()['hasil']['id']
 					session['id_level'] = req_user.json()['hasil']['id_level']
-					if session['id_level'] == 1:
+					if session['id_level'] == 1 or session['id_level'] == 2 or session['id_level'] == 3:
 						if 'table' in session:
 							session.pop('exp')
 							session.pop('table')
@@ -138,7 +152,7 @@ def logout():
 
 @app.route('/dashboard')
 def dashboard():
-	if isadmin():
+	if isadmin() or isCashier() or isChef():
 		return render_template("blackdashboard/dashboard.html")
 	else:
 		return redirect(url_for('index'))
@@ -638,15 +652,109 @@ def remove_table(id_table):
 	else:
 		return redirect(url_for('index'))
 
+@app.route('/orders')
+def orders():
+	if isadmin() or isCashier() or isChef() :
+		url_order = "http://127.0.0.1:5000/api/orders/"
+		req_order = requests.get(url_order)
+
+		orders = []
+		if req_order.status_code == 200:
+			if req_order.json()['status'] == '000':
+				# select all trx_id where payment = False and trx_id = args[trx_id]
+				all_trx_id  = req_order.json()['hasil']
+				for i in all_trx_id:
+					data_trx = {}
+					item_trx = []
+					# select trx
+					trx =  i['item']
+					for j in trx:
+						data = {}
+						data['id'] = sToken.dumps(j['id'], salt='id_checkout') 
+						data['id_product'] = sToken.dumps(j['id_product'],salt='id_product')
+						data['nama_produk'] = j['nama_produk']
+						data['foto_produk'] = j['foto_produk']
+						data['quantity'] = j['quantity']
+						item_trx.append(data)
+					data_trx['item'] = item_trx
+					data_trx['payment'] = i['payment']
+					data_trx['qty_all_item'] = i['qty_all_item']
+					data_trx['grand_price'] = i['grand_price']
+					data_trx['trx_id'] = i['trx_id']
+					data_trx['waktu_trx'] = i['waktu_trx']
+					data_trx['table'] = i['table']
+					orders.append(data_trx)
+				# print(orders)
+				# return jsonify({'hasil':orders})
+				return render_template('blackdashboard/orders.html',data_orders=orders)
+			else:
+				return 'Opps {}'.format(req_checkout.json()['hasil'])
+		else:
+			return 'Opps Internal Server Error'
+	else:
+		return redirect(url_for('index'))
+
+@app.route('/orders/<trx_id>/<acceptorrefuse>')
+def payment(trx_id,acceptorrefuse):
+	if isadmin() or isCashier() or isChef() :
+		if acceptorrefuse == 'accept':
+			if isadmin() or isCashier():
+				url_order = "http://127.0.0.1:5000/api/orders/"
+				req_order = requests.post(url_order,params={'trx_id':trx_id})
+				if req_order.status_code == 200:
+					req_order = req_order.json()
+					if req_order['status'] == '000':
+						flash("".format(req_order['hasil']),"success")
+						return redirect(url_for('orders'))
+					flash("".format(req_order['hasil']),"warning")
+					return redirect(url_for('orders'))
+				flash("Something Wrong","danger")
+				return redirect(url_for('orders'))
+			return redirect(url_for('orders'))
+		elif acceptorrefuse == 'refuse':
+			if isadmin() or isCashier():
+				url_order = "http://127.0.0.1:5000/api/orders/"
+				req_order = requests.delete(url_order,params={'trx_id':trx_id})
+				if req_order.status_code == 200:
+					req_order = req_order.json()
+					if req_order['status'] == '000':
+						flash("".format(req_order['hasil']),"success")
+						return redirect(url_for('orders'))
+					flash("".format(req_order['hasil']),"warning")
+					return redirect(url_for('orders'))
+				flash("Something Wrong","danger")
+				return redirect(url_for('orders'))
+			return redirect(url_for('orders'))
+		elif acceptorrefuse == 'finish':
+			if isadmin() or isChef():
+				url_order = "http://127.0.0.1:5000/api/orders/"
+				req_order = requests.put(url_order,params={'trx_id':trx_id})
+				if req_order.status_code == 200:
+					req_order = req_order.json()
+					if req_order['status'] == '000':
+						flash("".format(req_order['hasil']),"success")
+						return redirect(url_for('orders'))
+					flash("".format(req_order['hasil']),"warning")
+					return redirect(url_for('orders'))
+				flash("Something Wrong","danger")
+				return redirect(url_for('orders'))
+			return redirect(url_for('orders'))
+		else:
+			return redirect(url_for('index'))
+	else:
+		return redirect(url_for('index'))
+
+
+# Customers Area
 @app.route('/scan-table')
 def scan_table():
-	if 'table' in session or isadmin():
+	if 'table' in session or isadmin() or isCashier() or isChef():
 		return redirect(url_for('index'))
 	return render_template('scan_table.html')
 
 @app.route('/scan-table/<id_table>')
 def scan_table_id(id_table):
-	if 'table' in session or isadmin():
+	if 'table' in session or isadmin() or isCashier() or isChef():
 		return redirect(url_for('index'))
 	dec_id_table = sToken.loads(id_table,salt='id_table')
 	session['table'] = dec_id_table
@@ -665,6 +773,8 @@ def scan_table_id(id_table):
 
 @app.route('/cart')
 def cart():
+	if isadmin() or isCashier() or isChef():
+		return redirect(url_for('index'))
 	if 'table' in session:
 		url_cart = "http://127.0.0.1:5000/api/cart/"
 		req_cart = requests.get(url_cart,params={'id_table':session['table']})
@@ -695,6 +805,8 @@ def cart():
 
 @app.route('/add-to-cart/<id_produk>')
 def add_to_cart(id_produk):
+	if isadmin() or isCashier() or isChef():
+		return redirect(url_for('index'))
 	if 'table' in session:
 		id_produk = sToken.loads(id_produk,salt='id_produk')
 		jumlah = 1
@@ -713,6 +825,8 @@ def add_to_cart(id_produk):
 
 @app.route('/update-cart-item',methods=['POST'])
 def update_cart_item():
+	if isadmin() or isCashier() or isChef():
+		return redirect(url_for('index'))
 	if 'table' in session:
 		id_cart = request.form['id_cart']
 		id_cart = sToken.loads(id_cart,salt='id_cart')
@@ -741,6 +855,8 @@ def update_cart_item():
 
 @app.route('/delete-cart-item/<id_cart>')
 def delete_cart_item(id_cart):
+	if isadmin() or isCashier() or isChef():
+		return redirect(url_for('index'))
 	if 'table' in session:
 		id_cart = sToken.loads(id_cart,salt='id_cart',max_age=300)
 		url_cart = "http://127.0.0.1:5000/api/cart/"
@@ -754,13 +870,12 @@ def checkout():
 	if 'table' in session:
 		url_checkout = "http://127.0.0.1:5000/api/checkout/"
 		if islogin():
-			if isadmin():
+			if isadmin() or isCashier() or isChef():
 				return redirect(url_for('index'))
 			else:
 				params = {'id_table':int(session['table']),'id_user':int(session['user'])}
 		else:
 			params = {'id_table':int(session['table'])}
-		print(params)
 		req_checkout = requests.post(url_checkout,params=params)
 		if req_checkout.status_code == 200:
 			if req_checkout.json()['status'] == '000':
@@ -769,13 +884,19 @@ def checkout():
 				session.pop('table')
 				session.pop('quantity')
 				session.pop('job_id')
-				return 'Berhasil Order'
+				data_orders = req_checkout.json()['orders']
+				return render_template('invoice.html',data_orders=data_orders)
 			else:
 				return req_checkout.json()['hasil']
 		else:
-			return 'gagal'				
+			flash('Something Wrong')
+			return redirect(url_for('cart'))				
 	else:
 		return redirect(url_for('index'))
+
+@app.route('/coba')
+def coba():
+	return render_template('invoice.html')
 
 if __name__ == '__main__':
 	app.run(debug=True,port=5002)

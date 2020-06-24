@@ -24,7 +24,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="{{url_for('static',filename='blackdashboard/assets/img/apple-icon.png')}}">
   <link rel="icon" type="image/png" href="{{url_for('static',filename='blackdashboard/assets/img/favicon.png')}}">
   <title>
-    Restoku | Products
+    Restoku | Orders
   </title>
   <!--     Fonts and icons     -->
   <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,600,700,800" rel="stylesheet" />
@@ -59,7 +59,7 @@
               <p>Dashboard</p>
             </a>
           </li>
-          <li>
+          <li class="active">
             <a href="/orders">
               <i class="tim-icons icon-bullet-list-67"></i>
               <p>Orders</p>
@@ -84,7 +84,7 @@
               <p>Product Category</p>
             </a>
           </li>
-          <li class="active ">
+          <li>
             <a href="/product">
               <i class="tim-icons icon-bag-16"></i>
               <p>Product</p>
@@ -178,22 +178,117 @@
       </div>
       <!-- End Navbar -->
       <div class="content">
-        <h2 class="card-title"> Products <a href="#"  data-toggle="modal" data-target="#tambah_product" class="btn btn-primary btn-sm btn-icon"><i class="tim-icons icon-simple-add"></i></a></h2>
         <div class="row">
-          {% for i in data_produk %}
-          <div class="col-lg-4">
-            <div class="card  ">
-              <img class="card-img-top" src="{{i.foto_produk}}" style="height: 180px;width: 320px; object-fit: cover;" alt="Card image cap">
+          {% if session['id_level'] == 1 or session['id_level'] == 2 %}
+          <div class="col-lg-12 col-md-12">
+            <div class="card ">
+              <div class="card-header">
+                <h2 class="card-title"> Orders </h2>
+              </div>
               <div class="card-body">
-                <h4 class="card-title">{{i.nama_produk}} <a href="#" data-toggle="modal" data-target="#edit_produk{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/deleteproduct/{{i.id}}/{{i.foto_produk_enc}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a></h4>
-                <p class="card-text">Category : {{i.jenis_product}} <br> Price : <span class="price">{{i.harga_produk}}</span> <br> Description : {{i.description}} </p>
-                
+              	<!-- Start Collapses -->
+                <div id="accordion" role="tablist" aria-multiselectable="true" class="card-collapse">
+								  {% for i in data_orders %}
+                  {% if i.payment == 0 %}
+								  <div class="card card-plain">
+								    <div class="card-header" role="tab" id="headingThree">
+								        <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapseThree">
+								            {{i.trx_id}} - {% if i.payment == 0 %}Belum Dibayar{% else %}Sudah Dibayar {% endif %}
+								            <i class="tim-icons icon-minimal-down"></i>
+								        </a>
+								    </div>
+								    <div id="collapse{{loop.index}}" class="collapse" role="tabpanel" aria-labelledby="headingThree">
+								      <div class="card-body">
+                        <span>Option: <a href="/orders/{{i.trx_id}}/refuse" class="btn btn-danger btn-sm"><i class="tim-icons icon-simple-remove"></i></a> <a href="/orders/{{i.trx_id}}/accept" class="btn btn-success btn-sm"><i class="tim-icons icon-check-2"></i></a></span><br>
+                        <span>Grand Price: {{i.grand_price}}</span><br>
+                        <span>Waktu Transaksi: {{i.waktu_trx}}</span><br>
+                        <span>Meja: {{i.table}}</span><br>
+								        <div class="table-responsive">
+                          <table class="table tablesorter " id="">
+                            <thead class=" text-primary">
+                              <tr>
+                                <th class="text-center">#</th>
+                                <th>Nama Product</th>
+                                <th class="text-center">QTY</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for j in i.item %}
+                              <tr>
+                                <td class="text-center">{{loop.index}}</td>
+                                <td>{{j.nama_produk}}</td>
+                                <td class="text-center">{{j.quantity}}</td>
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+								      </div>
+								    </div>
+								  </div>
+                  {% endif %}
+								  {% endfor %}
+								</div>
+								<!-- End Collapses -->
               </div>
             </div>
           </div>
-          {% endfor %}
+          {% endif %}
+          {% if session['id_level'] == 1 or session['id_level'] == 3 %}
+          <div class="col-lg-12 col-md-12">
+            <div class="card ">
+              <div class="card-header">
+                <h2 class="card-title"> Processed </h2>
+              </div>
+              <div class="card-body">
+                <!-- Start Collapses -->
+                <div id="accordion" role="tablist" aria-multiselectable="true" class="card-collapse">
+                  {% for i in data_orders %}
+                  {% if i.payment == 1 %}
+                  <div class="card card-plain">
+                    <div class="card-header" role="tab" id="headingThree">
+                        <a class="collapsed" data-toggle="collapse" data-parent="#accordion" href="#collapseprocessed{{loop.index}}" aria-expanded="false" aria-controls="collapseThree">
+                            {{i.trx_id}} - {% if i.payment == 0 %}Belum Dibayar{% else %}Sudah Dibayar {% endif %}
+                            <i class="tim-icons icon-minimal-down"></i>
+                        </a>
+                    </div>
+                    <div id="collapseprocessed{{loop.index}}" class="collapse" role="tabpanel" aria-labelledby="headingThree">
+                      <div class="card-body">
+                        <span>Option: <a href="/orders/{{i.trx_id}}/finish" class="btn btn-success btn-sm"><i class="tim-icons icon-check-2"></i></a></span><br>
+                        <span>Waktu Transaksi: {{i.waktu_trx}}</span><br>
+                        <span>Meja: {{i.table}}</span><br>
+                        <div class="table-responsive">
+                          <table class="table tablesorter " id="">
+                            <thead class=" text-primary">
+                              <tr>
+                                <th class="text-center">#</th>
+                                <th>Nama Product</th>
+                                <th class="text-center">QTY</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for j in i.item %}
+                              <tr>
+                                <td class="text-center">{{loop.index}}</td>
+                                <td>{{j.nama_produk}}</td>
+                                <td class="text-center">{{j.quantity}}</td>
+                              </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {% endif %}
+                  {% endfor %}
+                </div>
+                <!-- End Collapses -->
+              </div>
+            </div>
+          </div>
+          {% endif %}
         </div>
-        
       </div>
       <footer class="footer">
         <div class="container-fluid">
@@ -265,112 +360,6 @@
       </ul>
     </div>
   </div>
-
-  <!-- Modal -->
-  <div class="modal fade" id="tambah_product" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <form action="/product" method="POST" enctype="multipart/form-data">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Add Product</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
-              <i class="tim-icons icon-simple-remove"></i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="">Nama Produk</label>
-              <input type="text" class="form-control" name="nama_produk" placeholder="Product Name" required>
-            </div>
-            <div class="form-group">
-              <label for="">Jenis Produk</label>
-              <select name="jenis_product" class="form-control">
-                {%for i in data_jenis_produk%}
-                <option value="{{i.id}}">{{i.nama_jenis_product}}</option>
-                {%endfor%}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="">Harga Produk</label>
-              <input type="number" class="form-control" name="harga_produk" placeholder="Price" required>
-            </div>
-            <div class="form-group">
-              <label for="">Photo</label>
-              <div class="custom-file" style="color: black;">
-                <input type="file" name="file" required style="color: black;" class="custom-file-input" id="customFile">
-                <label class="custom-file-label" style="color: black;" for="customFile">Choose file</label>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="">Description</label>
-              <textarea class="form-control" name="description" required style="color: black;"></textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  {% for i in data_produk %}
-  <div class="modal fade" id="edit_produk{{loop.index}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <form action="/editproduct/{{i.id}}/{{i.foto_produk_enc}}" method="POST" enctype="multipart/form-data">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Edit Product</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
-              <i class="tim-icons icon-simple-remove"></i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="">Nama Produk</label>
-              <input type="text" value="{{i.nama_produk}}" class="form-control" name="nama_produk" placeholder="Product Name" required>
-            </div>
-            <div class="form-group">
-              <label for="">Jenis Produk</label>
-              <select name="jenis_product" class="form-control">
-                {%for j in data_jenis_produk%}
-                <option value="{{j.id}}" {% if i.jenis_product == j.nama_jenis_product %} selected="true"{% endif %}>{{j.nama_jenis_product}}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="">Harga Produk</label>
-              <input type="number" value="{{i.harga_produk}}" class="form-control" name="harga_produk" placeholder="Price" required>
-            </div>
-            <div class="form-group">
-              <div class="container">
-                <div class="row">
-                  <div class="col-12">
-                    <img src="{{i.foto_produk}}" alt="">
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="">Photo</label>
-              <div class="custom-file" style="color: black;">
-                <input type="file" name="file" style="color: black;" class="custom-file-input" id="customFile">
-                <label class="custom-file-label" style="color: black;" for="customFile">Choose file</label>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="">Description</label>
-              <textarea class="form-control" name="description" required style="color: black;">{{i.description}}</textarea>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-primary">Save</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  {% endfor %}
 
   <!--   Core JS Files   -->
   <script src="{{url_for('static',filename='blackdashboard/assets/js/core/jquery.min.js')}}"></script>
@@ -507,40 +496,7 @@
   </script>
   <script>
     $(document).ready(function(){
-      $('input').css("color","black")
-      $('select').css("color","black")
-    })
-  </script>
-  <script>
-    // Add the following code if you want the name of the file appear on select
-    $(".custom-file-input").on("change", function() {
-      var fileName = $(this).val().split("\\").pop();
-      $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
-    });
-  </script>
-  <script>
-    $(document).ready(function () {
-      function formatRupiah(angka, prefix){
-        var number_string = angka.replace(/[^,\d]/g, '').toString(),
-        split       = number_string.split(','),
-        sisa        = split[0].length % 3,
-        rupiah        = split[0].substr(0, sisa),
-        ribuan        = split[0].substr(sisa).match(/\d{3}/gi);
-       
-        // tambahkan titik jika yang di input sudah menjadi angka ribuan
-        if(ribuan){
-          separator = sisa ? '.' : '';
-          rupiah += separator + ribuan.join('.');
-        }
-       
-        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
-        return prefix == undefined ? rupiah : (rupiah ? 'Rp.' + rupiah : '');
-      }
-      let harga = $('.price')
-      console.log(harga)
-      for (var i = harga.length - 1; i >= 0; i--) {
-        $(harga[i]).text(formatRupiah($(harga[i]).text(),''))
-      }
+      $('input').css("color","black");
     })
   </script>
 </body>

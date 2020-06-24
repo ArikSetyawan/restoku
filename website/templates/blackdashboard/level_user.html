@@ -59,6 +59,13 @@
               <p>Dashboard</p>
             </a>
           </li>
+          <li>
+            <a href="/orders">
+              <i class="tim-icons icon-bullet-list-67"></i>
+              <p>Orders</p>
+            </a>
+          </li>
+          {% if session['id_level'] == 1 %}
           <li class="active ">
             <a href="/level_user">
               <i class="tim-icons icon-key-25"></i>
@@ -89,6 +96,7 @@
               <p>Table</p>
             </a>
           </li>
+          {% endif %}
         </ul>
       </div>
     </div>

@@ -60,6 +60,7 @@ class checkout(BaseModel):
 	id_product = ForeignKeyField(product)
 	quantity = IntegerField()
 	sub_price = IntegerField()
+	status = CharField(default='payment')
 	payment = BooleanField(default=False)
 
 
@@ -632,6 +633,112 @@ class resource_cart(Resource):
 			qty_all = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
 			return jsonify({"hasil":'cart {} Deleted'.format(args['id_cart']),'status':'000','quantity':qty_all})
 
+
+class resource_order(Resource):
+	def get(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('trx_id',type=str,help='must str,transaction id')
+		args = parser.parse_args()
+
+		if args['trx_id'] is None:
+			orders = []
+
+			# select all trx_id where payment = False
+			all_trx_id  = checkout.select().where(checkout.status != 'selesai').group_by(checkout.trx_id)
+			for i in all_trx_id:
+				data_trx = {}
+				item_trx = []
+				# select trx
+				trx =  checkout.select().where(checkout.trx_id == i.trx_id)
+				for j in trx:
+					data = {}
+					data['id'] = j.id
+					data['id_product'] = int(str(j.id_product))
+					data['nama_produk'] = j.id_product.nama_produk
+					data['foto_produk'] = j.id_product.foto_produk
+					data['quantity'] = j.quantity
+					item_trx.append(data)
+				data_trx['item'] = item_trx
+				data_trx['payment'] = i.payment
+				data_trx['qty_all_item'] = checkout.select(fn.SUM(checkout.quantity)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['grand_price'] = checkout.select(fn.SUM(checkout.sub_price)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['trx_id'] = i.trx_id
+				data_trx['waktu_trx'] = i.waktu_trx
+				data_trx['table'] = i.id_table.nama_table
+				orders.append(data_trx)
+			return jsonify({"hasil":orders,'status':'000'})
+		else:
+			orders = []
+
+			# select all trx_id where payment = False and trx_id = args[trx_id]
+			all_trx_id  = checkout.select().where((checkout.trx_id == args['trx_id'])&(checkout.payment == False)).group_by(checkout.trx_id)
+			for i in all_trx_id:
+				data_trx = {}
+				item_trx = []
+				# select trx
+				trx =  checkout.select().where(checkout.trx_id == i.trx_id)
+				for j in trx:
+					data = {}
+					data['id'] = j.id
+					data['id_product'] = int(str(j.id_product))
+					data['nama_produk'] = j.id_product.nama_produk
+					data['foto_produk'] = j.id_product.foto_produk
+					data['quantity'] = j.quantity
+					item_trx.append(data)
+				data_trx['item'] = item_trx
+				data_trx['qty_all_item'] = checkout.select(fn.SUM(checkout.quantity)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['grand_price'] = checkout.select(fn.SUM(checkout.sub_price)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['trx_id'] = i.trx_id
+				data_trx['waktu_trx'] = i.waktu_trx
+				data_trx['table'] = i.id_table.nama_table
+				orders.append(data_trx)
+			return jsonify({"hasil":orders,'status':'000'})
+
+	# Function for accept transaction if customer already pay the bills
+	def post(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('trx_id',required=True,type=str,help='trx_id,must str')
+		args = parser.parse_args()
+
+		# Check transaction is exists
+		transaction = checkout.select().where((checkout.trx_id == args['trx_id'])&(checkout.payment == False))
+		if transaction.exists():
+			transaction = checkout.update(payment=True,status='dimasak').where(checkout.trx_id == args['trx_id'])
+			transaction.execute()
+			return jsonify({"hasil":"Transaction Processed",'status':'000'})
+		else:
+			return jsonify({"hasil":"Transaction Not Found",'status':'001'})
+
+	# Function for finish the transaction and serve food to customer
+	def put(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('trx_id',required=True,type=str,help='trx_id,must str')
+		args = parser.parse_args()
+		
+		# Check transaction is exists
+		transaction = checkout.select().where((checkout.trx_id == args['trx_id'])&(checkout.payment == True)&(checkout.status == 'dimasak'))
+		if transaction.exists():
+			transaction = checkout.update(status='selesai').where(checkout.trx_id == args['trx_id'])
+			transaction.execute()
+			return jsonify({"hasil":"Transaction Complete",'status':'000'})
+		else:
+			return jsonify({"hasil":"Transaction Not Found",'status':'001'})
+
+	# function for delete transaction if customer refuse to pay bills
+	def delete(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('trx_id',required=True,type=str,help='trx_id,must str')
+		args = parser.parse_args()
+
+		# Check transaction is exists
+		transaction = checkout.select().where((checkout.trx_id == args['trx_id'])&(checkout.payment == False))
+		if transaction.exists():
+			transaction = checkout.delete().where(checkout.trx_id == args['trx_id'])
+			transaction.execute()
+			return jsonify({"hasil":"Transaction Deleted",'status':'000'})
+		else:
+			return jsonify({"hasil":"Transaction Not Found",'status':'001'})
+
 class resource_checkout(Resource):
 	def post(self):
 		parser = reqparse.RequestParser()
@@ -655,7 +762,7 @@ class resource_checkout(Resource):
 		if query_cart.exists():
 			# Insert into checkout
 			waktu_trx = generate_datetime()
-			trx_id = 'TRX'+''.join(random.choice(string.digits) for _ in range(14))
+			trx_id = 'TYA-{}-'.format(query_cart.get().id_table.nama_table)+''.join(random.choice(string.digits) for _ in range(14))
 			for i in query_cart:
 				checkout.create(
 					trx_id=trx_id,
@@ -670,23 +777,18 @@ class resource_checkout(Resource):
 			data_cart = []
 			for i in query_cart:
 				data = {}
-				data['id'] = i.id
-				data['id_table'] = int(str(i.id_table))
 				data['nama_table'] = i.id_table.nama_table
-				data['id_user'] = i.id_user
-				data['id_product'] = int(str(i.id_product))
 				data['nama_produk'] = i.id_product.nama_produk
-				data['foto_produk'] = i.id_product.foto_produk
-				data['description'] = i.id_product.description
 				data['harga_produk'] = i.id_product.harga_produk
 				data['quantity'] = i.quantity
 				data['sub_price'] = i.sub_price
 				data_cart.append(data)
 			orders = {}
-			orders['item'] = data_cart
+			orders['items'] = data_cart
 			orders['qty_all_item'] = cart.select(fn.SUM(cart.quantity)).where(cart.id_table == args['id_table']).scalar()
 			orders['grand_price'] = cart.select(fn.SUM(cart.sub_price)).where(cart.id_table == args['id_table']).scalar()
-			
+			orders['trx_id'] = trx_id
+			orders['waktu_trx'] = waktu_trx
 			# Delete all item in cart
 			d_cart = cart.delete().where(cart.id_table == args['id_table'])
 			d_cart.execute()
@@ -702,6 +804,7 @@ api.add_resource(resource_jenis_product,'/api/jenis_product/')
 api.add_resource(resource_product, '/api/product/')
 api.add_resource(resource_table, '/api/table/')
 api.add_resource(resource_cart, '/api/cart/')
+api.add_resource(resource_order,'/api/orders/')
 api.add_resource(resource_checkout, '/api/checkout/')
 
 if __name__ == '__main__':

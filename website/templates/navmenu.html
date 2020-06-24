@@ -5,7 +5,7 @@
 {% else %}
 <li class="nav-item "><a href="#" type="button" data-toggle="modal" data-target="#login_modal" class="nav-link">Login</a></li>
 {% endif %}
-{% if session['id_level'] == 1 %}
+{% if session['id_level'] == 1 or session['id_level'] == 2 or session['id_level'] == 3 %}
 <li class="nav-item "><a href="/dashboard" class="nav-link">Dashboard</a></li>
 {% endif %}
 {% if session['table'] %}
