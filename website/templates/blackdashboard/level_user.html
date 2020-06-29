@@ -35,6 +35,14 @@
   <link href="{{url_for('static',filename='blackdashboard/assets/css/black-dashboard.css')}}" rel="stylesheet" />
   <!-- CSS Just for demo purpose, don't include it in your project -->
   <link href="{{url_for('static',filename='blackdashboard/assets/demo/demo.css')}}" rel="stylesheet" />
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category,message in messages %}
+        <meta name="notif" content="{{message}}" category="{{category}}">
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-notify/0.2.0/css/bootstrap-notify.min.css">
 </head>
 
 <body class="">
@@ -211,7 +219,7 @@
                         </td>
                         <td class="text-center">
                           {% if i.nama_level != "Admin" %}
-                          <a href="#" data-toggle="modal" data-target="#edit_level_user{{loop.index}}"  class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/delete_level_user/{{i.id}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a>
+                          <a href="#" data-toggle="modal" data-target="#edit_level_user{{loop.index}}"  class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/delete_level_user/{{i.id}}" class="delete_item btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a>
                           {% endif %}
                         </td>
                       </tr>
@@ -276,20 +284,6 @@
           <span class="badge light-badge mr-2"></span>
           <span class="badge dark-badge ml-2"></span>
           <span class="color-label">DARK MODE</span>
-        </li>
-        <li class="button-container">
-          <a href="https://www.creative-tim.com/product/black-dashboard" target="_blank" class="btn btn-primary btn-block btn-round">Download Now</a>
-          <a href="https://demos.creative-tim.com/black-dashboard/docs/1.0/getting-started/introduction.html" target="_blank" class="btn btn-default btn-block btn-round">
-            Documentation
-          </a>
-        </li>
-        <li class="header-title">Thank you for 95 shares!</li>
-        <li class="button-container text-center">
-          <button id="twitter" class="btn btn-round btn-info"><i class="fab fa-twitter"></i> &middot; 45</button>
-          <button id="facebook" class="btn btn-round btn-info"><i class="fab fa-facebook-f"></i> &middot; 50</button>
-          <br>
-          <br>
-          <a class="github-button" href="https://github.com/creativetimofficial/black-dashboard" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star ntkme/github-buttons on GitHub">Star</a>
         </li>
       </ul>
     </div>
@@ -359,6 +353,9 @@
   <script src="{{url_for('static',filename='blackdashboard/assets/js/black-dashboard.min.js')}}"></script>
   <!-- Black Dashboard DEMO methods, don't include it in your project! -->
   <script src="{{url_for('static',filename='blackdashboard/assets/demo/demo.js')}}"></script>
+  <script src="{{url_for('static',filename='jsku/notif.js')}}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+  <script src="{{url_for('static',filename='jsku/gen_sweetalert.js')}}"></script>
   <script>
     $(document).ready(function() {
       $().ready(function() {

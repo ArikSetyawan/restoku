@@ -132,11 +132,12 @@ def login():
 							session.pop('job_id')
 						else:
 							pass
+						flash('Selamat Datang','success')
 						return redirect(url_for('dashboard'))
 					else:
 						return redirect(url_for('index'))
 				else:
-					flash("username or password invalid")
+					flash("username or password invalid",'error')
 					return redirect(url_for('index'))
 			return redirect(url_for('index'))
 		return redirect(url_for('index'))
@@ -183,10 +184,10 @@ def level_user():
 			url_level_user = 'http://127.0.0.1:5000/api/level_user/'
 			req_level_user = requests.post(url_level_user,json=json)
 			if req_level_user.status_code == 200:
-				flash(req_level_user.json()['hasil'])
-				print(req_level_user.json()['hasil'])
+				flash('Level User Berhasil ditambahkan','success')
 				return redirect(url_for('level_user'))
 			else:
+				flash('Level User Gagal ditambahkan','error')
 				return redirect(url_for('level_user'))
 	else:
 		return redirect(url_for('index'))
@@ -204,10 +205,10 @@ def edit_level_user(id_level):
 		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
 		req_level_user = requests.put(url_level_user,json=json)
 		if req_level_user.status_code == 200:
-			flash(req_level_user.json()['hasil'])
-			print(req_level_user.json()['hasil'])
+			flash('Level User Berhasil Diubah','success')
 			return redirect(url_for('level_user'))
 		else:
+			flash('Level User Gagal Diubah','error')
 			return redirect(url_for('level_user'))
 	else:
 		return redirect(url_for('index'))
@@ -222,10 +223,10 @@ def delete_level_user(id_level):
 		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
 		req_level_user = requests.delete(url_level_user,params=params)
 		if req_level_user.status_code == 200:
-			flash(req_level_user.json()['hasil'])
-			print(req_level_user.json()['hasil'])
+			flash('Level User Berhasil Dihapus','success')
 			return redirect(url_for('level_user'))
 		else:
+			flash('Level User Gagal Dihapus','success')
 			return redirect(url_for('level_user'))	
 	return redirect(url_for('index'))
 
@@ -274,6 +275,7 @@ def user():
 			}
 			url_user = "http://127.0.0.1:5000/api/user/"
 			req_user = requests.post(url_user,json=json)
+			flash('User Berhasil ditambahkan','success')
 			return redirect(request.url)
 	else:
 		return redirect(url_for('index'))
@@ -295,6 +297,7 @@ def edit_user(id_user):
 		}
 		url_user = "http://127.0.0.1:5000/api/user/"
 		req_user = requests.put(url_user,json=json)
+		flash('User Berhasil Diubah','success')
 		return redirect(url_for('user'))
 	else:
 		return redirect(url_for('index'))
@@ -305,6 +308,7 @@ def remove_user(id_user):
 		id_user = sToken.loads(id_user,salt='id_user')
 		url_user = "http://127.0.0.1:5000/api/user/"
 		req_user = requests.delete(url_user,params={'id_user':id_user})
+		flash('User Berhasil Dihapus','success')
 		return redirect(url_for('user'))
 	else:
 		return redirect(url_for('index'))
@@ -334,12 +338,10 @@ def product_category():
 			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
 			req_jenis_produk = requests.post(url_jenis_produk,json=json)
 			if req_jenis_produk.status_code == 200:
-				flash(req_jenis_produk.json()['hasil'])
-				print(req_jenis_produk.json()['hasil'])
+				flash('Kategori Produk Berhasil ditambahkan','success')
 				return redirect(url_for('product_category'))
 			else:
-				flash(req_jenis_produk.json()['hasil'])
-				print(req_jenis_produk.json()['hasil'])
+				flash('Kategori Produk Gagal ditambahkan','error')
 				return redirect(url_for('product_category'))
 	else:
 		return redirect(url_for('index'))
@@ -356,12 +358,10 @@ def edit_product_category(id_jenis_product):
 		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
 		req_jenis_produk = requests.put(url_jenis_produk,json=json)
 		if req_jenis_produk.status_code == 200:
-			flash(req_jenis_produk.json()['hasil'])
-			print(req_jenis_produk.json()['hasil'])
+			flash('Kategori Produk Berhasil Diubah','success')
 			return redirect(url_for('product_category'))
 		else:
-			flash(req_jenis_produk.json()['hasil'])
-			print(req_jenis_produk.json()['hasil'])
+			flash('Kategori Produk Berhasil ditambahkan','error')
 			return redirect(url_for('product_category'))
 	else:
 		return redirect(url_for('index'))
@@ -376,12 +376,10 @@ def delete_product_category(id_jenis_product):
 		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
 		req_jenis_produk = requests.delete(url_jenis_produk,params=params)
 		if req_jenis_produk.status_code == 200:
-			flash(req_jenis_produk.json()['hasil'])
-			print(req_jenis_produk.json()['hasil'])
+			flash('Kategori Produk Berhasil Dihapus','success')
 			return redirect(url_for('product_category'))
 		else:
-			flash(req_jenis_produk.json()['hasil'])
-			print(req_jenis_produk.json()['hasil'])
+			flash('Kategori Produk Gagal ditambahkan','error')
 			return redirect(url_for('product_category'))
 	else:
 		return redirect(url_for('index'))
@@ -482,17 +480,16 @@ def product():
 						json_file = {"old_filename":req.json()['foto_produk']}
 						req_file = requests.delete(photo_link,json=json_file)
 						if req_file.json()['status'] == 'success':
-							flash(req.json()['hasil'])
-							print((req.json()['hasil']))
+							flash('Produk Berhasil ditambahkan','success')
 							return redirect(url_for('product'))
 						else:
-							flash("Opps Something Wrong in delete photo when product name is already exists")
-							print("Opps Something Wrong in delete photo when product name is already exists")
+							flash("Opps Something Wrong in delete photo when product name is already exists",'error')
 							return redirect(url_for('product'))
 					else:
-						flash(req.json()['hasil'])
+						flash("Opps Something Wrong",'error')
 						return redirect(url_for('product'))
 				else:
+					flash("Opps Something Wrong",'error')
 					return redirect(url_for('product'))
 	else:
 		return redirect(url_for('index'))
@@ -524,6 +521,7 @@ def editproduct(idproduct,filenamephoto):
 				'description': description
 			}
 			req = requests.put(url,json=json)
+			flash("Produk Berhasil Diubah",'success')
 			return redirect(url_for('product'))
 		
 		if file and allowed_file(file.filename):
@@ -570,9 +568,10 @@ def editproduct(idproduct,filenamephoto):
 					'description': description
 				}
 				req = requests.put(url,json=json)
-
+				flash("Produk Berhasil Diubah",'success')
 				return redirect(url_for('product'))
 			else:
+				flash("Produk Gagal Diubah",'error')
 				return redirect(url_for('product'))
 	else:
 		return redirect(url_for('index'))
@@ -591,13 +590,13 @@ def deleteproduct(idproduct,filenamephoto):
 		if req_file.json()['status'] == 'success':
 			params = {"id_product":id_produk}
 			req_api = requests.delete(url_api,params=params)
-			print('oke')
+			flash("Produk Berhasil Dihapus",'success')
 			return redirect(url_for('product'))
 		else:
-			print('gagal')
+			flash("Produk Gagal Diubah",'error')
 			return redirect(url_for('product'))
 	else:
-		print("gagal")
+		flash("Opps Something Wrong",'error')
 		return redirect(url_for('product'))
 
 @app.route('/table',methods=['GET','POST'])
@@ -625,7 +624,12 @@ def table():
 			url_api = 'http://127.0.0.1:5000/api/table/'
 			json = {'nama_table':nama_table}
 			req_table = requests.post(url_api,json=json)
-			return redirect(url_for('table'))
+			if req_table.json()['status'] == '000':
+				flash("Meja Berhasil ditambahkan",'success')
+				return redirect(url_for('table'))
+			else:
+				flash("Meja Gagal ditambahkan",'error')
+				return redirect(url_for('table'))
 	else:
 		return redirect(url_for('index'))
 
@@ -638,7 +642,12 @@ def update_table(id_table):
 		url_api = 'http://127.0.0.1:5000/api/table/'
 		json = {'id_table':id_table,'nama_table':nama_table}
 		req_table = requests.put(url_api,json=json)
-		return redirect(url_for('table'))
+		if req_table.json()['status'] == '000':
+			flash("Meja Berhasil Diubah",'success')
+			return redirect(url_for('table'))
+		else:
+			flash("Meja Gagal Diubah",'error')
+			return redirect(url_for('table'))
 	else:
 		return redirect(url_for('index'))
 
@@ -648,6 +657,7 @@ def remove_table(id_table):
 		id_table = sToken.loads(id_table,salt='id_table')
 		url_api = 'http://127.0.0.1:5000/api/table/'
 		req_table = requests.delete(url_api,params={'id_table':id_table})
+		flash("Meja Berhasil Dihapus",'success')
 		return redirect(url_for('table'))
 	else:
 		return redirect(url_for('index'))
@@ -704,11 +714,11 @@ def payment(trx_id,acceptorrefuse):
 				if req_order.status_code == 200:
 					req_order = req_order.json()
 					if req_order['status'] == '000':
-						flash("".format(req_order['hasil']),"success")
+						flash("Pesanan dimasak","success")
 						return redirect(url_for('orders'))
-					flash("".format(req_order['hasil']),"warning")
+					flash("Opps Something Wrong!","error")
 					return redirect(url_for('orders'))
-				flash("Something Wrong","danger")
+				flash("Something Wrong","error")
 				return redirect(url_for('orders'))
 			return redirect(url_for('orders'))
 		elif acceptorrefuse == 'refuse':
@@ -718,11 +728,11 @@ def payment(trx_id,acceptorrefuse):
 				if req_order.status_code == 200:
 					req_order = req_order.json()
 					if req_order['status'] == '000':
-						flash("".format(req_order['hasil']),"success")
+						flash("Pesanan ditolak","success")
 						return redirect(url_for('orders'))
-					flash("".format(req_order['hasil']),"warning")
+					flash("Opps Something Wrong","error")
 					return redirect(url_for('orders'))
-				flash("Something Wrong","danger")
+				flash("Something Wrong","error")
 				return redirect(url_for('orders'))
 			return redirect(url_for('orders'))
 		elif acceptorrefuse == 'finish':
@@ -732,11 +742,11 @@ def payment(trx_id,acceptorrefuse):
 				if req_order.status_code == 200:
 					req_order = req_order.json()
 					if req_order['status'] == '000':
-						flash("".format(req_order['hasil']),"success")
+						flash("Pesanan siap disajikan","success")
 						return redirect(url_for('orders'))
-					flash("".format(req_order['hasil']),"warning")
+					flash("Opps Something Wrong!","error")
 					return redirect(url_for('orders'))
-				flash("Something Wrong","danger")
+				flash("Something Wrong","error")
 				return redirect(url_for('orders'))
 			return redirect(url_for('orders'))
 		else:
@@ -762,7 +772,8 @@ def scan_table_id(id_table):
 
 	job = queue.enqueue_in(datetime.timedelta(minutes=5),jadwal_job.background_task,dec_id_table)
 	session['job_id'] = job.id
-	
+
+	flash('Silahkan Order Menu','success')
 	resp = make_response(redirect(url_for('index')))
 	expire_date = datetime.datetime.now()
 	expire_date = expire_date + datetime.timedelta(minutes=5)
@@ -820,7 +831,9 @@ def add_to_cart(id_produk):
 		url_cart = "http://127.0.0.1:5000/api/cart/"
 		req_cart = requests.post(url_cart,json=json)
 		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
+		flash('Berhasil ditambahkan kedalam cart','success')
 		return redirect(url_for('index'))
+	flash('Gagal ditambahkan kedalam cart','error')
 	return redirect(url_for('index'))
 
 @app.route('/update-cart-item',methods=['POST'])
@@ -862,6 +875,7 @@ def delete_cart_item(id_cart):
 		url_cart = "http://127.0.0.1:5000/api/cart/"
 		req_cart = requests.delete(url_cart,params={'id_table':session['table'],'id_cart':id_cart})
 		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
+		flash('Item Berhasil dihapus','success')
 		return redirect(url_for('cart'))
 	return redirect(url_for('index'))
 
@@ -887,7 +901,8 @@ def checkout():
 				data_orders = req_checkout.json()['orders']
 				return render_template('invoice.html',data_orders=data_orders)
 			else:
-				return req_checkout.json()['hasil']
+				flash('checkout failed. no item found in cart','error')
+				return redirect(url_for('cart'))
 		else:
 			flash('Something Wrong')
 			return redirect(url_for('cart'))				

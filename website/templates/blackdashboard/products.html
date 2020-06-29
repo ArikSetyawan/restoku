@@ -35,6 +35,14 @@
   <link href="{{url_for('static',filename='blackdashboard/assets/css/black-dashboard.css')}}" rel="stylesheet" />
   <!-- CSS Just for demo purpose, don't include it in your project -->
   <link href="{{url_for('static',filename='blackdashboard/assets/demo/demo.css')}}" rel="stylesheet" />
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category,message in messages %}
+        <meta name="notif" content="{{message}}" category="{{category}}">
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-notify/0.2.0/css/bootstrap-notify.min.css">
 </head>
 
 <body class="">
@@ -183,9 +191,9 @@
           {% for i in data_produk %}
           <div class="col-lg-4">
             <div class="card  ">
-              <img class="card-img-top" src="{{i.foto_produk}}" style="height: 180px;width: 320px; object-fit: cover;" alt="Card image cap">
+              <img class="card-img-top" src="{{i.foto_produk}}" style="height: 200px;width: 330px;" alt="Card image cap">
               <div class="card-body">
-                <h4 class="card-title">{{i.nama_produk}} <a href="#" data-toggle="modal" data-target="#edit_produk{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/deleteproduct/{{i.id}}/{{i.foto_produk_enc}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a></h4>
+                <h4 class="card-title">{{i.nama_produk}} <a href="#" data-toggle="modal" data-target="#edit_produk{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/deleteproduct/{{i.id}}/{{i.foto_produk_enc}}" class="btn btn-danger btn-sm btn-icon delete_item"><i class="tim-icons icon-trash-simple"></i></a></h4>
                 <p class="card-text">Category : {{i.jenis_product}} <br> Price : <span class="price">{{i.harga_produk}}</span> <br> Description : {{i.description}} </p>
                 
               </div>
@@ -385,6 +393,9 @@
   <script src="{{url_for('static',filename='blackdashboard/assets/js/black-dashboard.min.js')}}"></script>
   <!-- Black Dashboard DEMO methods, don't include it in your project! -->
   <script src="{{url_for('static',filename='blackdashboard/assets/demo/demo.js')}}"></script>
+  <script src="{{url_for('static',filename='jsku/notif.js')}}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+  <script src="{{url_for('static',filename='jsku/gen_sweetalert.js')}}"></script>
   <script>
     $(document).ready(function() {
       $().ready(function() {

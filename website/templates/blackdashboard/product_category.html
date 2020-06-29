@@ -35,6 +35,14 @@
   <link href="{{url_for('static',filename='blackdashboard/assets/css/black-dashboard.css')}}" rel="stylesheet" />
   <!-- CSS Just for demo purpose, don't include it in your project -->
   <link href="{{url_for('static',filename='blackdashboard/assets/demo/demo.css')}}" rel="stylesheet" />
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category,message in messages %}
+        <meta name="notif" content="{{message}}" category="{{category}}">
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-notify/0.2.0/css/bootstrap-notify.min.css">
 </head>
 
 <body class="">
@@ -210,7 +218,7 @@
                           {{i.nama_jenis_product}}
                         </td>
                         <td class="text-center">
-                          <a href="#" data-toggle="modal" data-target="#edit_product_category{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/delete_product_category/{{i.id}}" class="btn btn-danger btn-sm btn-icon"><i class="tim-icons icon-trash-simple"></i></a>
+                          <a href="#" data-toggle="modal" data-target="#edit_product_category{{loop.index}}" class="btn btn-warning btn-sm btn-icon"><i class="tim-icons icon-pencil"></i></a> <a href="/delete_product_category/{{i.id}}" class="btn btn-danger btn-sm btn-icon delete_item"><i class="tim-icons icon-trash-simple"></i></a>
                         </td>
                       </tr>
                       {% endfor %}
@@ -358,6 +366,9 @@
   <script src="{{url_for('static',filename='blackdashboard/assets/js/black-dashboard.min.js')}}"></script>
   <!-- Black Dashboard DEMO methods, don't include it in your project! -->
   <script src="{{url_for('static',filename='blackdashboard/assets/demo/demo.js')}}"></script>
+  <script src="{{url_for('static',filename='jsku/notif.js')}}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+  <script src="{{url_for('static',filename='jsku/gen_sweetalert.js')}}"></script>
   <script>
     $(document).ready(function() {
       $().ready(function() {
