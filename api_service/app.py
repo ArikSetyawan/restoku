@@ -638,13 +638,14 @@ class resource_order(Resource):
 	def get(self):
 		parser = reqparse.RequestParser()
 		parser.add_argument('trx_id',type=str,help='must str,transaction id')
+		parser.add_argument('id_user',type=int,help='must int,id user')
 		args = parser.parse_args()
 
-		if args['trx_id'] is None:
+		if args['trx_id'] is None and args['id_user'] is None :
 			orders = []
 
 			# select all trx_id where payment = False
-			all_trx_id  = checkout.select().where(checkout.status != 'selesai').group_by(checkout.trx_id)
+			all_trx_id  = checkout.select().group_by(checkout.trx_id).order_by(checkout.waktu_trx.desc())
 			for i in all_trx_id:
 				data_trx = {}
 				item_trx = []
@@ -658,6 +659,63 @@ class resource_order(Resource):
 					data['foto_produk'] = j.id_product.foto_produk
 					data['quantity'] = j.quantity
 					item_trx.append(data)
+				data_trx['status'] = i.status
+				data_trx['item'] = item_trx
+				data_trx['payment'] = i.payment
+				data_trx['qty_all_item'] = checkout.select(fn.SUM(checkout.quantity)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['grand_price'] = checkout.select(fn.SUM(checkout.sub_price)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['trx_id'] = i.trx_id
+				data_trx['waktu_trx'] = i.waktu_trx
+				data_trx['table'] = i.id_table.nama_table
+				orders.append(data_trx)
+			return jsonify({"hasil":orders,'status':'000'})
+		elif args['trx_id'] is not None and args['id_user'] is None:
+			orders = []
+
+			# select all trx_id where payment = False and trx_id = args[trx_id]
+			all_trx_id  = checkout.select().where((checkout.trx_id == args['trx_id'])).group_by(checkout.trx_id).order_by(checkout.waktu_trx.desc())
+			for i in all_trx_id:
+				data_trx = {}
+				item_trx = []
+				# select trx
+				trx =  checkout.select().where(checkout.trx_id == i.trx_id)
+				for j in trx:
+					data = {}
+					data['id'] = j.id
+					data['id_product'] = int(str(j.id_product))
+					data['nama_produk'] = j.id_product.nama_produk
+					data['foto_produk'] = j.id_product.foto_produk
+					data['quantity'] = j.quantity
+					item_trx.append(data)
+				data_trx['status'] = i.status
+				data_trx['payment'] = i.payment
+				data_trx['item'] = item_trx
+				data_trx['qty_all_item'] = checkout.select(fn.SUM(checkout.quantity)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['grand_price'] = checkout.select(fn.SUM(checkout.sub_price)).where(checkout.trx_id == i.trx_id).scalar()
+				data_trx['trx_id'] = i.trx_id
+				data_trx['waktu_trx'] = i.waktu_trx
+				data_trx['table'] = i.id_table.nama_table
+				orders.append(data_trx)
+			return jsonify({"hasil":orders,'status':'000'})
+		elif args['trx_id'] is None and args['id_user'] is not None:
+			orders = []
+
+			# select all trx_id where payment = False and trx_id = args[trx_id]
+			all_trx_id  = checkout.select().where((checkout.id_user == args['id_user'])).group_by(checkout.trx_id).order_by(checkout.waktu_trx.desc())
+			for i in all_trx_id:
+				data_trx = {}
+				item_trx = []
+				# select trx
+				trx =  checkout.select().where(checkout.trx_id == i.trx_id)
+				for j in trx:
+					data = {}
+					data['id'] = j.id
+					data['id_product'] = int(str(j.id_product))
+					data['nama_produk'] = j.id_product.nama_produk
+					data['foto_produk'] = j.id_product.foto_produk
+					data['quantity'] = j.quantity
+					item_trx.append(data)
+				data_trx['status'] = i.status
 				data_trx['item'] = item_trx
 				data_trx['payment'] = i.payment
 				data_trx['qty_all_item'] = checkout.select(fn.SUM(checkout.quantity)).where(checkout.trx_id == i.trx_id).scalar()
@@ -668,31 +726,7 @@ class resource_order(Resource):
 				orders.append(data_trx)
 			return jsonify({"hasil":orders,'status':'000'})
 		else:
-			orders = []
-
-			# select all trx_id where payment = False and trx_id = args[trx_id]
-			all_trx_id  = checkout.select().where((checkout.trx_id == args['trx_id'])&(checkout.payment == False)).group_by(checkout.trx_id)
-			for i in all_trx_id:
-				data_trx = {}
-				item_trx = []
-				# select trx
-				trx =  checkout.select().where(checkout.trx_id == i.trx_id)
-				for j in trx:
-					data = {}
-					data['id'] = j.id
-					data['id_product'] = int(str(j.id_product))
-					data['nama_produk'] = j.id_product.nama_produk
-					data['foto_produk'] = j.id_product.foto_produk
-					data['quantity'] = j.quantity
-					item_trx.append(data)
-				data_trx['item'] = item_trx
-				data_trx['qty_all_item'] = checkout.select(fn.SUM(checkout.quantity)).where(checkout.trx_id == i.trx_id).scalar()
-				data_trx['grand_price'] = checkout.select(fn.SUM(checkout.sub_price)).where(checkout.trx_id == i.trx_id).scalar()
-				data_trx['trx_id'] = i.trx_id
-				data_trx['waktu_trx'] = i.waktu_trx
-				data_trx['table'] = i.id_table.nama_table
-				orders.append(data_trx)
-			return jsonify({"hasil":orders,'status':'000'})
+			return jsonify({"hasil":'dont put trx_id and id_user. use one of those','status':'000'})
 
 	# Function for accept transaction if customer already pay the bills
 	def post(self):

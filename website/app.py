@@ -63,6 +63,13 @@ def isChef():
 		return False
 	return False
 
+def isregular():
+	if islogin():
+		if session['id_level'] == 4:
+			return True
+		return False
+	return False
+
 @app.before_request
 def before_request():
 	# Cancle Job
@@ -686,6 +693,7 @@ def orders():
 						data['foto_produk'] = j['foto_produk']
 						data['quantity'] = j['quantity']
 						item_trx.append(data)
+					data_trx['status'] = i['status']
 					data_trx['item'] = item_trx
 					data_trx['payment'] = i['payment']
 					data_trx['qty_all_item'] = i['qty_all_item']
@@ -909,9 +917,48 @@ def checkout():
 	else:
 		return redirect(url_for('index'))
 
-@app.route('/coba')
-def coba():
-	return render_template('invoice.html')
+@app.route('/profile')
+def profile():
+	if isregular():
+		id_user = session['user']
+		url_order = "http://127.0.0.1:5000/api/orders/"
+		req_order = requests.get(url_order,params={'id_user':id_user})
+		orders = []
+		url_user = "http://127.0.0.1:5000/api/user/"
+		req_user = requests.get(url_user,params={'id_user':id_user})
+
+		nama_user = req_user.json()['hasil']['nama_user']
+		point = req_user.json()['hasil']['point']
+		if req_order.status_code == 200:
+			if req_order.json()['status'] == '000':
+				all_trx_id  = req_order.json()['hasil']
+				for i in all_trx_id:
+					data_trx = {}
+					item_trx = []
+					# select trx
+					trx =  i['item']
+					for j in trx:
+						data = {}
+						data['id'] = sToken.dumps(j['id'], salt='id_checkout') 
+						data['id_product'] = sToken.dumps(j['id_product'],salt='id_product')
+						data['nama_produk'] = j['nama_produk']
+						data['foto_produk'] = j['foto_produk']
+						data['quantity'] = j['quantity']
+						item_trx.append(data)
+					data_trx['status'] = i['status']
+					data_trx['item'] = item_trx
+					data_trx['payment'] = i['payment']
+					data_trx['qty_all_item'] = i['qty_all_item']
+					data_trx['grand_price'] = i['grand_price']
+					data_trx['trx_id'] = i['trx_id']
+					data_trx['waktu_trx'] = i['waktu_trx']
+					data_trx['table'] = i['table']
+					orders.append(data_trx)
+				return render_template('blackdashboard/profile_user.html', orders=orders, nama_user=nama_user, point=point)
+			return render_template('blackdashboard/profile_user.html', orders=orders, nama_user=nama_user, point=point)
+		return render_template('blackdashboard/profile_user.html', orders=orders, nama_user=nama_user, point=point)
+	else:
+		return redirect(url_for('index'))
 
 if __name__ == '__main__':
 	app.run(debug=True,port=5002)
