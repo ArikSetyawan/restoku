@@ -11,4 +11,9 @@
 {% if session['table'] %}
 <li class="nav-item"><a class="nav-link"><span>Time Left : </span><span id="time"></span></a></li>
 {% endif %}
+{% if session['user'] %}
+{% if session['id_level'] == 4 %}
+<li class="nav-item cart"><a href="/profile" class="nav-link"><span class="icon icon-user"></span></a></li>
+{% endif %}
+{% endif %}
 {% endblock %}

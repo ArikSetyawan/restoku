@@ -644,7 +644,7 @@ class resource_order(Resource):
 		if args['trx_id'] is None and args['id_user'] is None :
 			orders = []
 
-			# select all trx_id where payment = False
+			# select all trx_id
 			all_trx_id  = checkout.select().group_by(checkout.trx_id).order_by(checkout.waktu_trx.desc())
 			for i in all_trx_id:
 				data_trx = {}
@@ -672,7 +672,7 @@ class resource_order(Resource):
 		elif args['trx_id'] is not None and args['id_user'] is None:
 			orders = []
 
-			# select all trx_id where payment = False and trx_id = args[trx_id]
+			# select all trx_id where trx_id = args[trx_id]
 			all_trx_id  = checkout.select().where((checkout.trx_id == args['trx_id'])).group_by(checkout.trx_id).order_by(checkout.waktu_trx.desc())
 			for i in all_trx_id:
 				data_trx = {}
@@ -700,7 +700,7 @@ class resource_order(Resource):
 		elif args['trx_id'] is None and args['id_user'] is not None:
 			orders = []
 
-			# select all trx_id where payment = False and trx_id = args[trx_id]
+			# select all trx_id and trx_id = args[trx_id]
 			all_trx_id  = checkout.select().where((checkout.id_user == args['id_user'])).group_by(checkout.trx_id).order_by(checkout.waktu_trx.desc())
 			for i in all_trx_id:
 				data_trx = {}
@@ -737,6 +737,14 @@ class resource_order(Resource):
 		# Check transaction is exists
 		transaction = checkout.select().where((checkout.trx_id == args['trx_id'])&(checkout.payment == False))
 		if transaction.exists():
+			id_user = transaction.get().id_user
+			if id_user != None:
+				grand_price = checkout.select(fn.SUM(checkout.sub_price)).where(checkout.trx_id == args['trx_id']).scalar()
+				if grand_price > 50000 :
+					point_user = user.get(user.id == id_user).point
+					point = int(point_user) + int(grand_price / 10)
+					update_point_user = user.update(point=point).where(user.id == id_user)
+					update_point_user.execute()
 			transaction = checkout.update(payment=True,status='dimasak').where(checkout.trx_id == args['trx_id'])
 			transaction.execute()
 			return jsonify({"hasil":"Transaction Processed",'status':'000'})
