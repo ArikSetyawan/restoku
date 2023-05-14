@@ -70,6 +70,14 @@ def isregular():
 		return False
 	return False
 
+# Base Prod URL
+base_api_url = "http://apirestoku.mastya.my.id"
+base_file_url = "http://restokuimage.mastya.my.id"
+
+# Base Dev URL
+# base_api_url = "http://127.0.0.1:5000"
+# base_file_url = "http://127.0.0.1:5001"
+
 @app.before_request
 def before_request():
 	# Cancle Job
@@ -98,7 +106,7 @@ def before_request():
 
 @app.route('/')
 def index():
-	url_produk = "http://127.0.0.1:5000/api/product/"
+	url_produk = f"{base_api_url}/api/product/"
 	req_produk = requests.get(url_produk)
 
 	data_produk = []
@@ -124,7 +132,7 @@ def login():
 	else:
 		username = request.form['username']
 		password = request.form['password']
-		url_user = "http://127.0.0.1:5000/api/user/"
+		url_user = f"{base_api_url}/api/user/"
 		req_user = requests.get(url_user,params={'username':username})
 		if req_user.status_code == 200:
 			if req_user.json()['status'] == '000':
@@ -169,7 +177,7 @@ def dashboard():
 def level_user():
 	if isadmin():
 		if request.method == 'GET':
-			url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+			url_level_user = f"{base_api_url}/api/level_user/"
 			req_level_user = requests.get(url_level_user)
 			data_level_user = []
 			if req_level_user.status_code == 200:
@@ -188,7 +196,7 @@ def level_user():
 			json = {
 				'nama_level':d_nama_level
 			}
-			url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+			url_level_user = f"{base_api_url}/api/level_user/"
 			req_level_user = requests.post(url_level_user,json=json)
 			if req_level_user.status_code == 200:
 				flash('Level User Berhasil ditambahkan','success')
@@ -209,7 +217,7 @@ def edit_level_user(id_level):
 			'id_level':id_level,
 			'nama_level':d_nama_level
 		}
-		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+		url_level_user = f"{base_api_url}/api/level_user/"
 		req_level_user = requests.put(url_level_user,json=json)
 		if req_level_user.status_code == 200:
 			flash('Level User Berhasil Diubah','success')
@@ -227,7 +235,7 @@ def delete_level_user(id_level):
 		params = {
 			'id_level':id_level,
 		}
-		url_level_user = 'http://127.0.0.1:5000/api/level_user/'
+		url_level_user = f"{base_api_url}/api/level_user/"
 		req_level_user = requests.delete(url_level_user,params=params)
 		if req_level_user.status_code == 200:
 			flash('Level User Berhasil Dihapus','success')
@@ -241,9 +249,9 @@ def delete_level_user(id_level):
 def user():
 	if isadmin():
 		if request.method == 'GET':
-			url_user = "http://127.0.0.1:5000/api/user/"
+			url_user = f"{base_api_url}/api/user/"
 			req_user = requests.get(url_user)
-			url_level_user = "http://127.0.0.1:5000/api/level_user/"
+			url_level_user = f"{base_api_url}/api/level_user/"
 			req_level_user = requests.get(url_level_user)
 			data_user = []
 			data_level_user = []
@@ -280,7 +288,7 @@ def user():
 				'username':username,
 				'password':password
 			}
-			url_user = "http://127.0.0.1:5000/api/user/"
+			url_user = f"{base_api_url}/api/user/"
 			req_user = requests.post(url_user,json=json)
 			flash('User Berhasil ditambahkan','success')
 			return redirect(request.url)
@@ -302,7 +310,7 @@ def edit_user(id_user):
 			'username':username,
 			'password':password
 		}
-		url_user = "http://127.0.0.1:5000/api/user/"
+		url_user = f"{base_api_url}/api/user/"
 		req_user = requests.put(url_user,json=json)
 		flash('User Berhasil Diubah','success')
 		return redirect(url_for('user'))
@@ -313,7 +321,7 @@ def edit_user(id_user):
 def remove_user(id_user):
 	if isadmin():
 		id_user = sToken.loads(id_user,salt='id_user')
-		url_user = "http://127.0.0.1:5000/api/user/"
+		url_user = f"{base_api_url}/api/user/"
 		req_user = requests.delete(url_user,params={'id_user':id_user})
 		flash('User Berhasil Dihapus','success')
 		return redirect(url_for('user'))
@@ -324,7 +332,7 @@ def remove_user(id_user):
 def product_category():
 	if isadmin():
 		if request.method == 'GET':
-			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+			url_jenis_produk = f"{base_api_url}/api/jenis_product/"
 			req_jenis_produk = requests.get(url_jenis_produk)
 			data_jenis_produk = []
 			if req_jenis_produk.status_code == 200:
@@ -342,7 +350,7 @@ def product_category():
 			json = {
 				'nama_jenis_product':d_nama_kategori
 			}
-			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+			url_jenis_produk = f"{base_api_url}/api/jenis_product/"
 			req_jenis_produk = requests.post(url_jenis_produk,json=json)
 			if req_jenis_produk.status_code == 200:
 				flash('Kategori Produk Berhasil ditambahkan','success')
@@ -362,7 +370,7 @@ def edit_product_category(id_jenis_product):
 			'id_jenis_product':id_jenis_product,
 			'nama_jenis_product':d_nama_kategori
 		}
-		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+		url_jenis_produk = f"{base_api_url}/api/jenis_product/"
 		req_jenis_produk = requests.put(url_jenis_produk,json=json)
 		if req_jenis_produk.status_code == 200:
 			flash('Kategori Produk Berhasil Diubah','success')
@@ -380,7 +388,7 @@ def delete_product_category(id_jenis_product):
 		params = {
 			'id_jenis_product':id_jenis_product,
 		}
-		url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+		url_jenis_produk = f"{base_api_url}/api/jenis_product/"
 		req_jenis_produk = requests.delete(url_jenis_produk,params=params)
 		if req_jenis_produk.status_code == 200:
 			flash('Kategori Produk Berhasil Dihapus','success')
@@ -396,8 +404,8 @@ def delete_product_category(id_jenis_product):
 def product():
 	if isadmin():
 		if request.method == "GET":
-			url_produk = "http://127.0.0.1:5000/api/product/"
-			url_jenis_produk = "http://127.0.0.1:5000/api/jenis_product/"
+			url_produk = f"{base_api_url}/api/product/"
+			url_jenis_produk = f"{base_api_url}/api/jenis_product/"
 			
 			req_produk = requests.get(url_produk)
 			req_jenis_produk = requests.get(url_jenis_produk)
@@ -465,14 +473,13 @@ def product():
 					'gambar' : base64file,
 					'ext' : ext
 				}
-				photo_link = 'http://127.0.0.1:5001/api/restokuimage/'
-				# photo_link = 'https://restoimg.herokuapp.com/api/restokuimage/'
+				photo_link = f"{base_file_url}/api/restokuimage/"
 				req_photo = requests.post(photo_link,json=json)
 				result = req_photo.json()
 				if result['status'] == 'error':
 					return redirect(request.url)
 				elif result['status'] == 'success':
-					url = 'http://127.0.0.1:5000/api/product/'
+					url = f"{base_api_url}/api/product/"
 					json = {
 						"nama_produk": nama_produk,
 						"harga_produk": harga_produk,
@@ -518,7 +525,7 @@ def editproduct(idproduct,filenamephoto):
 		
 		# Handle jika user tidak ingin mengubah gambar
 		if file.filename == '':
-			url = 'http://127.0.0.1:5000/api/product/'
+			url = f"{base_api_url}/api/product/"
 			json = {
 				"id_product":id_produk,
 				"nama_produk": nama_produk,
@@ -558,14 +565,13 @@ def editproduct(idproduct,filenamephoto):
 				'ext' : ext,
 				'old_filename' : old_filename
 			}
-			photo_link = 'http://127.0.0.1:5001/api/restokuimage/'
-			# photo_link = 'https://restoimg.herokuapp.com/api/restokuimage/'
+			photo_link = f"{base_file_url}/api/restokuimage/"
 			req_photo = requests.put(photo_link,json=json)
 			result = req_photo.json()
 			if result['status'] == 'error':
 				return redirect(request.url)
 			elif result['status'] == 'success':
-				url = 'http://127.0.0.1:5000/api/product/'
+				url = f"{base_api_url}/api/product/"
 				json = {
 					"id_product":id_produk,
 					"nama_produk": nama_produk,
@@ -589,8 +595,8 @@ def deleteproduct(idproduct,filenamephoto):
 	old_filename = sToken.loads(filenamephoto,salt='foto_produk')
 
 
-	url_api = 'http://127.0.0.1:5000/api/product/'
-	url_file = 'http://127.0.0.1:5001/api/restokuimage/'
+	url_api = f"{base_api_url}/api/product/"
+	url_file = f"{base_file_url}/api/restokuimage/"
 	json_file = {"old_filename":old_filename}
 	req_file = requests.delete(url_file,json=json_file)
 	if req_file.status_code == 200:
@@ -610,7 +616,7 @@ def deleteproduct(idproduct,filenamephoto):
 def table():
 	if isadmin():
 		if request.method == 'GET':
-			url_api = 'http://127.0.0.1:5000/api/table/'
+			url_api = f"{base_api_url}/api/table/"
 			req_table = requests.get(url_api)
 			
 			data_table = []
@@ -628,7 +634,7 @@ def table():
 		else:
 			nama_table = str(request.form['nama_table'])
 
-			url_api = 'http://127.0.0.1:5000/api/table/'
+			url_api = f"{base_api_url}/api/table/"
 			json = {'nama_table':nama_table}
 			req_table = requests.post(url_api,json=json)
 			if req_table.json()['status'] == '000':
@@ -646,7 +652,7 @@ def update_table(id_table):
 		id_table = sToken.loads(id_table,salt='id_table')
 		nama_table = str(request.form['nama_table'])
 
-		url_api = 'http://127.0.0.1:5000/api/table/'
+		url_api = f"{base_api_url}/api/table/"
 		json = {'id_table':id_table,'nama_table':nama_table}
 		req_table = requests.put(url_api,json=json)
 		if req_table.json()['status'] == '000':
@@ -662,7 +668,7 @@ def update_table(id_table):
 def remove_table(id_table):
 	if isadmin():
 		id_table = sToken.loads(id_table,salt='id_table')
-		url_api = 'http://127.0.0.1:5000/api/table/'
+		url_api = f"{base_api_url}/api/table/"
 		req_table = requests.delete(url_api,params={'id_table':id_table})
 		flash("Meja Berhasil Dihapus",'success')
 		return redirect(url_for('table'))
@@ -672,7 +678,7 @@ def remove_table(id_table):
 @app.route('/orders')
 def orders():
 	if isadmin() or isCashier() or isChef() :
-		url_order = "http://127.0.0.1:5000/api/orders/"
+		url_order = f"{base_api_url}/api/orders/"
 		req_order = requests.get(url_order)
 
 		orders = []
@@ -717,7 +723,7 @@ def payment(trx_id,acceptorrefuse):
 	if isadmin() or isCashier() or isChef() :
 		if acceptorrefuse == 'accept':
 			if isadmin() or isCashier():
-				url_order = "http://127.0.0.1:5000/api/orders/"
+				url_order = f"{base_api_url}/api/orders/"
 				req_order = requests.post(url_order,params={'trx_id':trx_id})
 				if req_order.status_code == 200:
 					req_order = req_order.json()
@@ -731,7 +737,7 @@ def payment(trx_id,acceptorrefuse):
 			return redirect(url_for('orders'))
 		elif acceptorrefuse == 'refuse':
 			if isadmin() or isCashier():
-				url_order = "http://127.0.0.1:5000/api/orders/"
+				url_order = f"{base_api_url}/api/orders/"
 				req_order = requests.delete(url_order,params={'trx_id':trx_id})
 				if req_order.status_code == 200:
 					req_order = req_order.json()
@@ -745,7 +751,7 @@ def payment(trx_id,acceptorrefuse):
 			return redirect(url_for('orders'))
 		elif acceptorrefuse == 'finish':
 			if isadmin() or isChef():
-				url_order = "http://127.0.0.1:5000/api/orders/"
+				url_order = f"{base_api_url}/api/orders/"
 				req_order = requests.put(url_order,params={'trx_id':trx_id})
 				if req_order.status_code == 200:
 					req_order = req_order.json()
@@ -795,7 +801,7 @@ def cart():
 	if isadmin() or isCashier() or isChef():
 		return redirect(url_for('index'))
 	if 'table' in session:
-		url_cart = "http://127.0.0.1:5000/api/cart/"
+		url_cart = f"{base_api_url}/api/cart/"
 		req_cart = requests.get(url_cart,params={'id_table':session['table']})
 		d_cart = req_cart.json()['hasil']['item']
 		data_cart = []
@@ -836,7 +842,7 @@ def add_to_cart(id_produk):
 			'id_table':meja,
 			'quantity':jumlah,
 		}
-		url_cart = "http://127.0.0.1:5000/api/cart/"
+		url_cart = f"{base_api_url}/api/cart/"
 		req_cart = requests.post(url_cart,json=json)
 		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
 		flash('Berhasil ditambahkan kedalam cart','success')
@@ -854,7 +860,7 @@ def update_cart_item():
 		qty = request.form['quantity']
 
 		# Get Cart Item Data
-		url_cart = "http://127.0.0.1:5000/api/cart/"
+		url_cart = f"{base_api_url}/api/cart/"
 		req_cart = requests.get(url=url_cart,params={'id_table':session['table'],'id_cart':id_cart})
 		
 		if req_cart.status_code == 200 and req_cart.json()['status'] == "000":
@@ -865,7 +871,7 @@ def update_cart_item():
 				'id_table':session['table'],
 				'quantity':qty
 			}
-			url_cart = "http://127.0.0.1:5000/api/cart/"
+			url_cart = f"{base_api_url}/api/cart/"
 			req_cart = requests.put(url_cart,json=json)
 			session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
 			return 'Berhasil Di Ubah'
@@ -880,7 +886,7 @@ def delete_cart_item(id_cart):
 		return redirect(url_for('index'))
 	if 'table' in session:
 		id_cart = sToken.loads(id_cart,salt='id_cart',max_age=300)
-		url_cart = "http://127.0.0.1:5000/api/cart/"
+		url_cart = f"{base_api_url}/api/cart/"
 		req_cart = requests.delete(url_cart,params={'id_table':session['table'],'id_cart':id_cart})
 		session['quantity'] = req_cart.json()['quantity'] if req_cart.json()['quantity'] != None else 0
 		flash('Item Berhasil dihapus','success')
@@ -890,7 +896,7 @@ def delete_cart_item(id_cart):
 @app.route('/checkout')
 def checkout():
 	if 'table' in session:
-		url_checkout = "http://127.0.0.1:5000/api/checkout/"
+		url_checkout = f"{base_api_url}/api/checkout/"
 		if islogin():
 			if isadmin() or isCashier() or isChef():
 				return redirect(url_for('index'))
@@ -921,10 +927,10 @@ def checkout():
 def profile():
 	if isregular():
 		id_user = session['user']
-		url_order = "http://127.0.0.1:5000/api/orders/"
+		url_order = f"{base_api_url}/api/orders/"
 		req_order = requests.get(url_order,params={'id_user':id_user})
 		orders = []
-		url_user = "http://127.0.0.1:5000/api/user/"
+		url_user = f"{base_api_url}/api/user/"
 		req_user = requests.get(url_user,params={'id_user':id_user})
 
 		nama_user = req_user.json()['hasil']['nama_user']

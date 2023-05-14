@@ -1,5 +1,5 @@
 from flask import Flask,jsonify, request
-from flask_restful import Api, Resource, reqparse
+from flask_restx import Api, Resource, reqparse
 from peewee import *
 import random, datetime, string
 
@@ -73,7 +73,7 @@ def generate_datetime():
 	return tanggal
 
 app = Flask(__name__)
-api = Api(app)
+api = Api(app, doc=False)
 
 class resource_level_user(Resource):
 	def get(self):

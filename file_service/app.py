@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_restful import Api, Resource, reqparse
+from flask_restx import Api, Resource, reqparse
 from peewee import *
 import os, string, random, base64, io
 from PIL import Image
@@ -30,7 +30,10 @@ def create_tables():
 
 
 app = Flask(__name__)
-api = Api(app)
+api = Api(app,doc=False)
+
+base_dev_url = "http://127.0.0.1:5001"
+base_prod_url = "http://restokuimage.mastya.my.id"
 
 # config
 app.config['imgdir'] = 'static/img/product'
@@ -64,11 +67,8 @@ class resource_image_upload(Resource):
 			img.save(os.path.join(app.config['imgdir'],filename))
 
 
-			# Local
-			link = 'http://127.0.0.1:5001/static/img/product/{}'.format(filename)
-
-			# Heroku
-			# link = "https://restoimg.herokuapp.com/static/img/product/{}".format(filename)
+			# file url
+			link = '{}/static/img/product/{}'.format(base_prod_url,filename)
 
 			image_file.create(
 					nama_file=filename,
@@ -101,11 +101,8 @@ class resource_image_upload(Resource):
 
 			img.save(os.path.join(app.config['imgdir'],filename))
 
-			# Local
-			link = 'http://127.0.0.1:5001/static/img/product/{}'.format(filename)
-
-			# Heroku
-			# link = "https://restoimg.herokuapp.com/static/img/product/{}".format(filename)
+			# file url
+			link = '{}/static/img/product/{}'.format(base_prod_url,filename)
 
 			d_image = image_file.update(
 						nama_file=filename,
